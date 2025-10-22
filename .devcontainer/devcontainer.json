@@ -25,5 +25,8 @@
       ]
     }
   },
+  "settings": {
+    "codespaces.portPreviewSetting": "browser"
+  },
   "remoteUser": "node"
 }
