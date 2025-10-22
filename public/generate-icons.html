@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>アイコン生成ツール</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      margin: 10px 5px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #5568d3;
+    }
+    .preview {
+      margin: 20px 0;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    canvas {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+    }
+    .success {
+      color: green;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>PWAアイコン生成ツール</h1>
+    <p>このページでMKGアプリのPWAアイコンを生成します。</p>
+
+    <div class="preview">
+      <div>
+        <h3>192x192 プレビュー</h3>
+        <canvas id="canvas192" width="192" height="192"></canvas>
+      </div>
+      <div>
+        <h3>512x512 プレビュー</h3>
+        <canvas id="canvas512" width="512" height="512"></canvas>
+      </div>
+    </div>
+
+    <button onclick="generateIcons()">アイコンを生成してダウンロード</button>
+    <div id="message"></div>
+  </div>
+
+  <script>
+    const svgContent = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+        <rect width="512" height="512" rx="100" fill="#667eea"/>
+        <text x="256" y="320" font-family="Arial, sans-serif" font-size="200" font-weight="bold" fill="white" text-anchor="middle">MKG</text>
+      </svg>
+    `;
+
+    function drawIcon(canvas, size) {
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+
+      return new Promise((resolve) => {
+        img.onload = function() {
+          ctx.drawImage(img, 0, 0, size, size);
+          URL.revokeObjectURL(url);
+          resolve();
+        };
+        img.src = url;
+      });
+    }
+
+    async function generateIcons() {
+      const canvas192 = document.getElementById('canvas192');
+      const canvas512 = document.getElementById('canvas512');
+
+      await drawIcon(canvas192, 192);
+      await drawIcon(canvas512, 512);
+
+      // 192x192をダウンロード
+      canvas192.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'icon-192x192.png';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      // 512x512をダウンロード
+      setTimeout(() => {
+        canvas512.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'icon-512x512.png';
+          a.click();
+          URL.revokeObjectURL(url);
+
+          document.getElementById('message').innerHTML =
+            '<p class="success">✅ アイコンがダウンロードされました！<br>' +
+            'ダウンロードした icon-192x192.png と icon-512x512.png を<br>' +
+            'public フォルダに配置してください。</p>';
+        });
+      }, 500);
+    }
+
+    // ページ読み込み時にプレビューを表示
+    window.onload = async function() {
+      await drawIcon(document.getElementById('canvas192'), 192);
+      await drawIcon(document.getElementById('canvas512'), 512);
+    };
+  </script>
+</body>
+</html>

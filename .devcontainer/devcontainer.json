@@ -1,0 +1,29 @@
+{
+  "name": "MKG App Development Environment",
+  "image": "mcr.microsoft.com/vscode/devcontainers/javascript-node:18",
+  "features": {},
+  "forwardPorts": [3000, 3001],
+  "portsAttributes": {
+    "3000": {
+      "label": "MKG App (Default)",
+      "visibility": "public",
+      "protocol": "http"
+    },
+    "3001": {
+      "label": "MKG App (Alternative)",
+      "visibility": "public",
+      "protocol": "http"
+    }
+  },
+  "postCreateCommand": "npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next"
+      ]
+    }
+  },
+  "remoteUser": "node"
+}

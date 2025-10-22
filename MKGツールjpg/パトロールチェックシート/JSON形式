@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "title": "MKGパトロールチェックシート",
+    "year": 2025,
+    "month": 8,
+    "team": "成形グリーン",
+    "total_score": 0,
+    "previous_score_diff": 0,
+    "notes": "評価点: 5=満点, 4=カイゼン前提で標準化済, 3=未整備, 2=形骸化, 1=実施なし"
+  },
+  "items": [
+    {
+      "no": 1,
+      "category": "整理",
+      "content": "管理箇所全体に整理が行われているか（重複するもの、余計な物はないか）",
+      "score": null,
+      "comment": null
+    },
+    {
+      "no": 2,
+      "category": "整頓",
+      "content": "定置され、収納表記はされているか（探しにくさ・使いづらさ・紛らわしさはないか）",
+      "score": null,
+      "comment": null
+    },
+    {
+      "no": 3,
+      "category": "清掃",
+      "content": "清掃ルールを守り、月・週・日常清掃など全員で分担し実行されているか",
+      "score": null,
+      "comment": null
+    },
+    {
+      "no": 4,
+      "category": "清潔",
+      "content": "整理・整頓・清掃は計画的に実施されているか",
+      "score": null,
+      "comment": null
+    },
+    {
+      "no": 5,
+      "category": "躾",
+      "content": "職場ミーティングの実施・継続はされているか",
+      "score": null,
+      "comment": null
+    },
+    {
+      "no": 6,
+      "category": "躾",
+      "content": "職場ルールの認識、実施、順守はされているか",
+      "score": null,
+      "comment": null
+    },
+    {
+      "no": 7,
+      "category": "躾",
+      "content": "掲示物への記入や更新はされているか",
+      "score": null,
+      "comment": null
+    },
+    {
+      "no": 8,
+      "category": "カイゼン",
+      "content": "パトロールでの指摘あればカイゼン活動に盛り込んでいるか",
+      "score": null,
+      "comment": null
+    },
+    {
+      "no": 9,
+      "category": "カイゼン",
+      "content": "カイゼン活動は展開表のスケジュール通り進んでいるか",
+      "score": null,
+      "comment": null
+    },
+    {
+      "no": 10,
+      "category": "カイゼン",
+      "content": "改善報告はLINE WORKSに投稿されているか（3か月以内）",
+      "score": null,
+      "comment": null
+    }
+  ],
+  "iso9001": {
+    "requirement_items": [],
+    "notes": "内部品質監査扱いの場合は1項目以上記入が必要"
+  }
+}

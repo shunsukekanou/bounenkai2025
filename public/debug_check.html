@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MKG-app デバッグ確認ページ</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 MKG-app デバッグ確認</h1>
+
+        <p>以下のボタンを<strong>順番に</strong>クリックして、結果をClaude Codeに報告してください。</p>
+
+        <button onclick="checkSession()">1. セッション情報を確認</button>
+        <button onclick="checkLocalStorage()">2. LocalStorage確認</button>
+        <button onclick="checkCurrentPage()">3. 現在のページ状態確認</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+        const SUPABASE_URL = 'https://xrwpzdvftrqaowjrtrrz.supabase.co'
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhyd3B6ZHZmdHJxYW93anJ0cnJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY2MzE5NzEsImV4cCI6MjA0MjIwNzk3MX0.SLcAjTO_qbyuiLa1vfykxEuSMp2Xurecalled2f0dTbiJc'
+
+        window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+        window.checkSession = async function() {
+            const resultDiv = document.getElementById('result')
+            resultDiv.innerHTML = '<div class="result info">確認中...</div>'
+
+            try {
+                const { data: { session }, error } = await window.supabase.auth.getSession()
+
+                if (error) {
+                    resultDiv.innerHTML = `<div class="result error">エラー: ${error.message}</div>`
+                    return
+                }
+
+                if (session) {
+                    const result = {
+                        'セッション状態': 'ログイン中',
+                        'ユーザーID': session.user.id,
+                        'メールアドレス': session.user.email,
+                        'last_team_id': session.user.user_metadata?.last_team_id || 'なし',
+                        'セッション有効期限': new Date(session.expires_at * 1000).toLocaleString('ja-JP')
+                    }
+                    resultDiv.innerHTML = `<div class="result success">${JSON.stringify(result, null, 2)}</div>`
+                } else {
+                    resultDiv.innerHTML = '<div class="result error">セッションなし（ログアウト状態）</div>'
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<div class="result error">エラー: ${err.message}</div>`
+            }
+        }
+
+        window.checkLocalStorage = function() {
+            const resultDiv = document.getElementById('result')
+
+            try {
+                const authKey = `sb-${SUPABASE_URL.split('//')[1].split('.')[0]}-auth-token`
+                const authData = localStorage.getItem(authKey)
+
+                if (authData) {
+                    const parsed = JSON.parse(authData)
+                    const result = {
+                        'LocalStorage': '存在する',
+                        'アクセストークン（最初の20文字）': parsed.access_token?.substring(0, 20) + '...',
+                        'リフレッシュトークン（最初の20文字）': parsed.refresh_token?.substring(0, 20) + '...'
+                    }
+                    resultDiv.innerHTML = `<div class="result success">${JSON.stringify(result, null, 2)}</div>`
+                } else {
+                    resultDiv.innerHTML = '<div class="result error">LocalStorageに認証情報なし</div>'
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<div class="result error">エラー: ${err.message}</div>`
+            }
+        }
+
+        window.checkCurrentPage = function() {
+            const resultDiv = document.getElementById('result')
+
+            const result = {
+                '現在のURL': window.location.href,
+                'ページタイトル': document.title,
+                '注意': 'この確認は http://localhost:3000 で行ってください'
+            }
+
+            resultDiv.innerHTML = `<div class="result info">${JSON.stringify(result, null, 2)}</div>`
+        }
+    </script>
+</body>
+</html>

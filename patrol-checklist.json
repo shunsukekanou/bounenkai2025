@@ -1,0 +1,63 @@
+{
+  "title": "パトロールチェックシート",
+  "header": {
+    "company": "MKG&コーチング",
+    "form_title": "パトロールチェックシート"
+  },
+  "fields": {
+    "date": "実施日",
+    "day_of_week": "曜日",
+    "time_start": "開始時刻",
+    "time_end": "終了時刻",
+    "location": "パトロール場所",
+    "weather": "天候",
+    "inspector": "実施者",
+    "supervisor": "確認者"
+  },
+  "check_items": [
+    {
+      "id": 1,
+      "category": "5S活動",
+      "name": "整理整頓",
+      "description": "職場の整理整頓状況をチェック"
+    },
+    {
+      "id": 2,
+      "category": "安全管理",
+      "name": "安全確保",
+      "description": "安全設備・通路の確認"
+    },
+    {
+      "id": 3,
+      "category": "品質管理",
+      "name": "品質状況",
+      "description": "製品・作業品質の確認"
+    },
+    {
+      "id": 4,
+      "category": "設備管理",
+      "name": "設備点検",
+      "description": "機械設備の状況確認"
+    },
+    {
+      "id": 5,
+      "category": "環境管理",
+      "name": "作業環境",
+      "description": "作業環境の適切性確認"
+    },
+    {
+      "id": 6,
+      "category": "コミュニケーション",
+      "name": "情報共有",
+      "description": "職場内コミュニケーション状況"
+    }
+  ],
+  "evaluation": {
+    "scale": ["良好", "普通", "要改善", "要注意"],
+    "colors": ["#4CAF50", "#FFC107", "#FF9800", "#F44336"]
+  },
+  "time_slots": [
+    "06:00", "07:00", "08:00", "09:00", "10:00", "11:00",
+    "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"
+  ]
+}

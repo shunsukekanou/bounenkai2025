@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm init:*)",
+      "Bash(npm install)",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(git config:*)",
+      "Bash(do echo \"=== $dir ===\")",
+      "Bash(ls:*)",
+      "Bash(done)",
+      "Bash(rm:*)",
+      "Bash(kill:*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(taskkill:*)",
+      "Bash(pkill:*)",
+      "Bash(git commit:*)",
+      "Bash(git fetch:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
