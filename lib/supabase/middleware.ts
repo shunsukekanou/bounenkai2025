@@ -47,8 +47,12 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
+  // ビンゴアプリのページは認証不要
+  const publicPaths = ["/", "/organizer", "/participant"];
+  const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path));
+
   if (
-    request.nextUrl.pathname !== "/" &&
+    !isPublicPath &&
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/auth")
