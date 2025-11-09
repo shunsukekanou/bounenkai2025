@@ -108,18 +108,27 @@ export default function ParticipantPage() {
     switch (step) {
       case 'enterCode':
         return (
-          <div className="w-full max-w-sm p-8 space-y-4 bg-white rounded-lg shadow-md text-center">
-            <h1 className="text-2xl font-bold">ゲームに参加する</h1>
-            <input type="text" value={gameCode} onChange={(e) => setGameCode(e.target.value.toUpperCase())} placeholder="ゲームコード" className="w-full px-4 py-2 text-center text-2xl tracking-widest border rounded-md" maxLength={6} />
+          <div className="w-full max-w-md p-8 space-y-4 bg-white rounded-lg shadow-md">
+            <h1 className="text-2xl font-bold text-center">🎮 ゲームに参加する</h1>
+            <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg text-left">
+              <h2 className="font-bold text-sm text-gray-800 mb-2">📝 参加方法</h2>
+              <p className="text-xs text-gray-700 mb-1">1. 幹事から教えてもらった6文字のゲームコードを入力</p>
+              <p className="text-xs text-gray-700">2. 「参加」ボタンを押してください</p>
+            </div>
+            <input type="text" value={gameCode} onChange={(e) => setGameCode(e.target.value.toUpperCase())} placeholder="ゲームコード（例：ABC123）" className="w-full px-4 py-2 text-center text-2xl tracking-widest border rounded-md" maxLength={6} />
             <button onClick={handleJoinGame} className="w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">参加</button>
             {error && <p className="text-red-500 mt-2">{error}</p>}
           </div>
         );
       case 'enterName':
         return (
-          <div className="w-full max-w-sm p-8 space-y-4 bg-white rounded-lg shadow-md text-center">
-            <h1 className="text-2xl font-bold">あなたの名前を入力</h1>
-            <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="ランキング表示名" className="w-full px-4 py-2 text-center text-lg border rounded-md" />
+          <div className="w-full max-w-md p-8 space-y-4 bg-white rounded-lg shadow-md">
+            <h1 className="text-2xl font-bold text-center">✏️ あなたの名前を入力</h1>
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg text-left">
+              <p className="text-xs text-gray-700 mb-1">この名前はビンゴランキングに表示されます</p>
+              <p className="text-xs text-gray-700">（本名でもニックネームでもOK）</p>
+            </div>
+            <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="ランキング表示名（例：田中太郎）" className="w-full px-4 py-2 text-center text-lg border rounded-md" />
             <button onClick={handleSetName} className="w-full px-4 py-2 font-semibold text-white bg-green-600 rounded-md hover:bg-green-700">決定</button>
             {error && <p className="text-red-500 mt-2">{error}</p>}
           </div>
@@ -127,7 +136,11 @@ export default function ParticipantPage() {
       case 'selectCard':
         return (
           <div className="w-full max-w-5xl p-8 space-y-6 bg-white rounded-lg shadow-md text-center">
-            <h1 className="text-3xl font-bold">お好きなカードを1枚選んでください</h1>
+            <h1 className="text-3xl font-bold">🎴 お好きなカードを1枚選んでください</h1>
+            <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg text-left max-w-2xl mx-auto">
+              <p className="text-sm text-gray-700 mb-1">✨ 3枚の中から好きなカードをタップして選択</p>
+              <p className="text-sm text-gray-700">💡 中央の「FREE」は最初からマークされています</p>
+            </div>
             <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 pt-4">
               {cardsToSelect.map((card, i) => (
                 <div key={i} onClick={() => { setSelectedCard(card); setStep('playing'); }} className="cursor-pointer hover:scale-105 hover:shadow-2xl transition-transform duration-300">
@@ -141,6 +154,11 @@ export default function ParticipantPage() {
         if (!selectedCard) return <div>カードがありません。</div>;
         return (
           <div className="space-y-4">
+            <div className="w-full max-w-md bg-green-50 border-l-4 border-green-500 p-3 rounded-lg">
+              <p className="text-xs text-gray-700 text-left">
+                ✅ 準備完了！幹事が番号を抽選すると、該当する数字が自動でマークされます。縦・横・斜めのいずれか1列が揃ったら自動的にビンゴです！
+              </p>
+            </div>
             <div className="relative w-full max-w-md p-4 md:p-6 space-y-4 bg-white rounded-lg shadow-md text-center">
               <h1 className="text-2xl font-bold">{userName}さんのカード</h1>
               <BingoCardDisplay cardData={selectedCard} />

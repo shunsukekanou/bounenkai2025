@@ -83,27 +83,42 @@ export default function OrganizerPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <div className="w-full max-w-2xl p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h1 className="text-3xl font-bold text-center text-gray-800">ビンゴゲーム管理画面</h1>
+        <h1 className="text-3xl font-bold text-center text-gray-800">👔 ビンゴゲーム管理画面</h1>
 
         {!game ? (
-          <button onClick={handleCreateGame} className="w-full px-4 py-3 text-lg font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">
-            新しいゲームを作成する
-          </button>
+          <>
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+              <h2 className="font-bold text-lg text-gray-800 mb-2">📝 幹事の方へ</h2>
+              <p className="text-sm text-gray-700 mb-2">下のボタンを押すと、6文字のゲームコードが発行されます。</p>
+              <p className="text-sm text-gray-700 font-semibold">このコードを参加者全員に共有してください（LINEグループなどで）</p>
+            </div>
+            <button onClick={handleCreateGame} className="w-full px-4 py-3 text-lg font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">
+              新しいゲームを作成する
+            </button>
+          </>
         ) : (
-          <div className="grid md:grid-cols-2 gap-8 items-start">
-            <div className="space-y-4 text-center">
-              <p className="text-gray-600">ゲームコード (参加者に共有):</p>
-              <p className="text-4xl font-bold text-green-600 tracking-widest bg-gray-200 p-3 rounded-md">
-                {game.game_code}
-              </p>
-              <button onClick={handleDrawNumber} disabled={isSpinning} className="w-full px-4 py-3 text-lg font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 disabled:bg-gray-400">
-                {isSpinning ? '抽選中...' : '次の数字を抽選する'}
-              </button>
+          <>
+            <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
+              <h2 className="font-bold text-lg text-gray-800 mb-2">✅ ゲームコード発行完了</h2>
+              <p className="text-sm text-gray-700 mb-1">1. 下のゲームコードを参加者全員に共有してください</p>
+              <p className="text-sm text-gray-700 mb-1">2. 参加者全員がカードを選んだら、「次の数字を抽選する」ボタンを押してゲーム開始</p>
+              <p className="text-sm text-gray-700">3. スロットマシンで番号が発表されます（約10秒）</p>
             </div>
-            <div className="flex justify-center">
+            <div className="grid md:grid-cols-2 gap-8 items-start">
+              <div className="space-y-4 text-center">
+                <p className="text-gray-600">ゲームコード (参加者に共有):</p>
+                <p className="text-4xl font-bold text-green-600 tracking-widest bg-gray-200 p-3 rounded-md">
+                  {game.game_code}
+                </p>
+                <button onClick={handleDrawNumber} disabled={isSpinning} className="w-full px-4 py-3 text-lg font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 disabled:bg-gray-400">
+                  {isSpinning ? '抽選中...' : '次の数字を抽選する'}
+                </button>
+              </div>
+              <div className="flex justify-center">
                 <SlotMachine drawnNumber={numberToDraw} isSpinning={isSpinning} onAnimationEnd={saveDrawnNumber} />
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         <div className="pt-6">
