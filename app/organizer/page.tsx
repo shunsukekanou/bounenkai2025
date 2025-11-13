@@ -104,7 +104,7 @@ export default function OrganizerPage() {
                 <h2 className="font-bold text-base text-gray-800 mb-2">✅ ゲームコード発行完了</h2>
                 <p className="text-xs text-gray-700 mb-1">1. 下のゲームコードを参加者全員に共有してください</p>
                 <p className="text-xs text-gray-700 mb-1">2. 参加者全員がカードを選んだら、「次の数字を抽選する」ボタンを押してゲーム開始</p>
-                <p className="text-xs text-gray-700">3. スロットマシンで番号が発表されます（約10秒）</p>
+                <p className="text-xs text-gray-700">3. スロットマシンで番号が発表されます（約4秒）</p>
               </div>
               <div className="space-y-4 text-center">
                 <div>

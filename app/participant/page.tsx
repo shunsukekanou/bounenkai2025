@@ -58,6 +58,62 @@ export default function ParticipantPage() {
   const [drawnNumbers, setDrawnNumbers] = useState<number[]>([]);
   const [isBingo, setIsBingo] = useState(false);
 
+  // ビンゴ達成音を再生
+  const playBingoSound = () => {
+    if (typeof window === 'undefined') return;
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+      // 華やかなビンゴ音（上昇音階）
+      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+
+      notes.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+
+        const startTime = audioContext.currentTime + index * 0.1;
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(0.4, startTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.6);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 0.6);
+      });
+    } catch (e) {
+      console.log('Audio not supported');
+    }
+  };
+
+  // カード選択時のクリック音
+  const playClickSound = () => {
+    if (typeof window === 'undefined') return;
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.1);
+    } catch (e) {
+      console.log('Audio not supported');
+    }
+  };
+
   // --- Real-time and State Effects ---
 
   useEffect(() => {
@@ -77,6 +133,7 @@ export default function ParticipantPage() {
     setSelectedCard(updatedCard);
     if (!isBingo && checkBingo(updatedCard)) {
       setIsBingo(true);
+      playBingoSound();
       claimBingo();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -160,7 +217,7 @@ export default function ParticipantPage() {
             </div>
             <div className="flex flex-col items-center gap-4 pt-2">
               {cardsToSelect.map((card, i) => (
-                <div key={i} onClick={() => { setSelectedCard(card); setStep('playing'); }} className="active:scale-95 transition-transform duration-200">
+                <div key={i} onClick={() => { playClickSound(); setSelectedCard(card); setStep('playing'); }} className="active:scale-95 transition-transform duration-200">
                   <BingoCardDisplay cardData={card} />
                 </div>
               ))}

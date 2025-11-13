@@ -14,33 +14,115 @@ export default function SlotMachine({ drawnNumber, isSpinning, onAnimationEnd }:
   const [animationSpeed, setAnimationSpeed] = useState(50); // ms
   const animationFrameId = useRef<number | null>(null);
   const timeoutId = useRef<NodeJS.Timeout | null>(null);
+  const rouletteAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // 音声ファイルを初期化
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      rouletteAudioRef.current = new Audio('/sounds/roulette.wav');
+      rouletteAudioRef.current.loop = true; // ループ再生
+      rouletteAudioRef.current.volume = 0.7; // 音量調整（0.0〜1.0）
+    }
+  }, []);
+
+  // 音声関数
+  const playDrumroll = () => {
+    if (rouletteAudioRef.current) {
+      try {
+        rouletteAudioRef.current.currentTime = 0; // 最初から再生
+        rouletteAudioRef.current.play().catch(e => console.log('Audio play failed:', e));
+      } catch (e) {
+        console.log('Audio not supported');
+      }
+    }
+  };
+
+  const stopDrumroll = () => {
+    if (rouletteAudioRef.current) {
+      try {
+        rouletteAudioRef.current.pause();
+        rouletteAudioRef.current.currentTime = 0;
+      } catch (e) {
+        // Already stopped
+      }
+    }
+  };
+
+  // 「てっ」という止まりかけの音
+  const playTickSound = () => {
+    if (typeof window === 'undefined') return;
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
+
+      gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.15);
+    } catch (e) {
+      console.log('Audio not supported');
+    }
+  };
+
+  const playWinSound = () => {
+    if (typeof window === 'undefined') return;
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+      // ファンファーレのような音
+      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+
+      notes.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+
+        const startTime = audioContext.currentTime + index * 0.15;
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 0.5);
+      });
+    } catch (e) {
+      console.log('Audio not supported');
+    }
+  };
 
   useEffect(() => {
     if (isSpinning && drawnNumber !== null) {
-      // 初期化：激しい高速回転（5秒間）
+      // ドラムロール音を再生
+      playDrumroll();
+
+      // 初期化：ルーレット回転（3.4秒間）
       setAnimationSpeed(20);
       const spinStartTime = Date.now();
 
       const fastSpin = () => {
         const elapsed = Date.now() - spinStartTime;
 
-        if (elapsed < 5000) {
-          // 激しい高速回転
+        if (elapsed < 3400) {
+          // ルーレット回転（3.4秒間）
           setDisplayNumbers(Array.from({ length: 5 }, () => Math.floor(Math.random() * 75) + 1));
           setRotation(prev => (prev + 72) % 360); // 激しく回転
           timeoutId.current = setTimeout(fastSpin, 20);
-        } else if (elapsed < 7000) {
-          // 中速回転（2秒間）
-          setDisplayNumbers(Array.from({ length: 5 }, () => Math.floor(Math.random() * 75) + 1));
-          setRotation(prev => (prev + 36) % 360);
-          timeoutId.current = setTimeout(fastSpin, 100);
-        } else if (elapsed < 9000) {
-          // 減速回転（2秒間）
-          setDisplayNumbers(Array.from({ length: 5 }, () => Math.floor(Math.random() * 75) + 1));
-          setRotation(prev => (prev + 18) % 360);
-          timeoutId.current = setTimeout(fastSpin, 300);
         } else {
-          // 最終段階：ゆっくり停止
+          // 最終段階：3テンポでゆっくり停止
           slowStop();
         }
       };
@@ -54,20 +136,36 @@ export default function SlotMachine({ drawnNumber, isSpinning, onAnimationEnd }:
     return () => {
       if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
       if (timeoutId.current) clearTimeout(timeoutId.current);
+      stopDrumroll();
     };
   }, [isSpinning, drawnNumber]);
 
   const slowStop = () => {
+    // ドラムロール音を停止
+    stopDrumroll();
+
+    // 回転を停止
+    setRotation(0);
+
     let count = 0;
     const finalStop = () => {
       if (count < 3) {
+        // 「てっ」という音を再生
+        playTickSound();
+        // ランダムな数字を表示（回転は止まっている）
         setDisplayNumbers([Math.floor(Math.random() * 75) + 1]);
         count++;
-        timeoutId.current = setTimeout(finalStop, 500);
+        // 3テンポ → 0.8秒間隔
+        timeoutId.current = setTimeout(finalStop, 800);
       } else {
         // 最終的な数字を表示
         setDisplayNumbers([drawnNumber!]);
-        setRotation(0);
+
+        // 0.1秒後にファンファーレ音を再生
+        setTimeout(() => {
+          playWinSound();
+        }, 100);
+
         onAnimationEnd();
       }
     };
