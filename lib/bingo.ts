@@ -123,3 +123,40 @@ export const checkBingo = (card: BingoCardData): boolean => {
 
   return false;
 };
+
+/**
+ * Checks if a bingo card is in "reach" state (one square away from bingo).
+ * @param card The BingoCardData to check.
+ * @returns {boolean} True if reach is found, false otherwise.
+ */
+export const checkReach = (card: BingoCardData): boolean => {
+  // Check rows for reach (exactly 4 marked)
+  for (let i = 0; i < 5; i++) {
+    const markedCount = card[i].filter(square => square.marked).length;
+    if (markedCount === 4) {
+      return true;
+    }
+  }
+
+  // Check columns for reach (exactly 4 marked)
+  for (let i = 0; i < 5; i++) {
+    const markedCount = card.filter(row => row[i].marked).length;
+    if (markedCount === 4) {
+      return true;
+    }
+  }
+
+  // Check diagonal (top-left to bottom-right) for reach
+  const diagonalMarked = Array.from({ length: 5 }, (_, i) => card[i][i]).filter(square => square.marked).length;
+  if (diagonalMarked === 4) {
+    return true;
+  }
+
+  // Check anti-diagonal (top-right to bottom-left) for reach
+  const antiDiagonalMarked = Array.from({ length: 5 }, (_, i) => card[i][4 - i]).filter(square => square.marked).length;
+  if (antiDiagonalMarked === 4) {
+    return true;
+  }
+
+  return false;
+};

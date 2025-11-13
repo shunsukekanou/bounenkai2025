@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '../../lib/supabase/client';
-import { generateUniqueBingoCards, checkBingo, BingoCardData, BingoSquare } from '../../lib/bingo';
+import { generateUniqueBingoCards, checkBingo, checkReach, BingoCardData, BingoSquare } from '../../lib/bingo';
 import WinnerList from '../../components/winner-list';
 import MobileOnlyGuard from '../../components/mobile-only-guard';
 
@@ -57,11 +57,33 @@ export default function ParticipantPage() {
   const [selectedCard, setSelectedCard] = useState<BingoCardData | null>(null);
   const [drawnNumbers, setDrawnNumbers] = useState<number[]>([]);
   const [isBingo, setIsBingo] = useState(false);
+  const [isReach, setIsReach] = useState(false);
 
   // ビンゴ達成音を再生
   const playBingoSound = () => {
     if (typeof window === 'undefined') return;
     try {
+      // 歓声音を再生
+      const cheerAudio = new Audio('/sounds/bingo-cheer.wav');
+      cheerAudio.volume = 0.7;
+      cheerAudio.play().catch(e => console.log('Cheer audio play failed:', e));
+
+      // お祝いのメロディーを再生
+      const melodyAudio = new Audio('/sounds/celebration-melody.wav');
+      melodyAudio.volume = 0.6;
+      melodyAudio.play().catch(e => console.log('Melody audio play failed:', e));
+
+      // 勝利のトランペットを再生
+      const trumpetAudio = new Audio('/sounds/victory-trumpet.wav');
+      trumpetAudio.volume = 0.8;
+      trumpetAudio.play().catch(e => console.log('Trumpet audio play failed:', e));
+
+      // 口笛を再生
+      const whistleAudio = new Audio('/sounds/whistle.wav');
+      whistleAudio.volume = 0.6;
+      whistleAudio.play().catch(e => console.log('Whistle audio play failed:', e));
+
+      // ファンファーレ音を再生
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 
       // 華やかなビンゴ音（上昇音階）
@@ -114,6 +136,38 @@ export default function ParticipantPage() {
     }
   };
 
+  // リーチ達成音を再生
+  const playReachSound = () => {
+    if (typeof window === 'undefined') return;
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+      // 緊張感のあるリーチ音（急上昇する音）
+      const notes = [440, 554.37, 659.25, 783.99]; // A4, C#5, E5, G5
+
+      notes.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.type = 'triangle'; // 柔らかい音
+        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+
+        const startTime = audioContext.currentTime + index * 0.1;
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(0.25, startTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.4);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 0.4);
+      });
+    } catch (e) {
+      console.log('Audio not supported');
+    }
+  };
+
   // --- Real-time and State Effects ---
 
   useEffect(() => {
@@ -131,10 +185,17 @@ export default function ParticipantPage() {
       row.map(square => ({ ...square, marked: square.number === 'FREE' || drawnNumbers.includes(square.number as number) }))
     );
     setSelectedCard(updatedCard);
+
+    // ビンゴチェック
     if (!isBingo && checkBingo(updatedCard)) {
       setIsBingo(true);
       playBingoSound();
       claimBingo();
+    }
+    // リーチチェック（ビンゴ前のみ）
+    else if (!isBingo && !isReach && checkReach(updatedCard)) {
+      setIsReach(true);
+      playReachSound();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawnNumbers]);
@@ -233,6 +294,74 @@ export default function ParticipantPage() {
                 ✅ 準備完了！幹事が番号を抽選すると、該当する数字が自動でマークされます。縦・横・斜めのいずれか1列が揃ったら自動的にビンゴです！
               </p>
             </div>
+
+            {/* 開発用テストボタン */}
+            <div className="w-full bg-orange-50 border border-orange-300 p-3 rounded-lg">
+              <p className="text-xs text-orange-700 mb-2">🧪 開発用テスト</p>
+              <div className="flex gap-2 mb-2">
+                <button
+                  onClick={() => {
+                    setIsReach(true);
+                    playReachSound();
+                  }}
+                  className="flex-1 px-3 py-2 text-sm font-semibold text-orange-700 bg-orange-100 border border-orange-300 rounded-md active:bg-orange-200"
+                >
+                  リーチ演出を視聴
+                </button>
+                <button
+                  onClick={() => {
+                    setIsBingo(true);
+                    playBingoSound();
+                  }}
+                  className="flex-1 px-3 py-2 text-sm font-semibold text-green-700 bg-green-100 border border-green-300 rounded-md active:bg-green-200"
+                >
+                  ビンゴ演出を視聴
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    const audio = new Audio('/sounds/victory-trumpet.wav');
+                    audio.volume = 0.8;
+                    audio.play().catch(e => console.log('Play failed:', e));
+                  }}
+                  className="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 border border-blue-300 rounded-md active:bg-blue-200"
+                >
+                  トランペット
+                </button>
+                <button
+                  onClick={() => {
+                    const audio = new Audio('/sounds/celebration-melody.wav');
+                    audio.volume = 0.6;
+                    audio.play().catch(e => console.log('Play failed:', e));
+                  }}
+                  className="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 border border-blue-300 rounded-md active:bg-blue-200"
+                >
+                  メロディー
+                </button>
+                <button
+                  onClick={() => {
+                    const audio = new Audio('/sounds/bingo-cheer.wav');
+                    audio.volume = 0.7;
+                    audio.play().catch(e => console.log('Play failed:', e));
+                  }}
+                  className="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 border border-blue-300 rounded-md active:bg-blue-200"
+                >
+                  歓声
+                </button>
+                <button
+                  onClick={() => {
+                    const audio = new Audio('/sounds/whistle.wav');
+                    audio.volume = 0.6;
+                    audio.play().catch(e => console.log('Play failed:', e));
+                  }}
+                  className="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 border border-blue-300 rounded-md active:bg-blue-200"
+                >
+                  口笛
+                </button>
+              </div>
+              <p className="text-xs text-orange-600 mt-1">※本番時は削除予定</p>
+            </div>
             <div className="relative w-full p-4 space-y-4 bg-white rounded-lg shadow-md text-center">
               <h1 className="text-lg font-bold">{userName}さんのカード</h1>
               <BingoCardDisplay cardData={selectedCard} />
@@ -240,6 +369,13 @@ export default function ParticipantPage() {
                 <h2 className="text-base font-semibold">抽選済み</h2>
                 <p className="text-2xl font-bold">{drawnNumbers.length} / 75</p>
               </div>
+              {isReach && !isBingo && (
+                <div className="absolute top-2 right-2 z-10">
+                  <div className="bg-gradient-to-r from-orange-400 to-red-500 text-white px-4 py-2 rounded-full shadow-lg animate-pulse font-bold text-sm">
+                    🔥 REACH!
+                  </div>
+                </div>
+              )}
               {isBingo && (
                 <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-10 rounded-lg">
                   <div className="text-6xl font-black text-white animate-bounce" style={{ textShadow: '0 0 20px #fef08a, 0 0 30px #fde047' }}>BINGO!</div>
