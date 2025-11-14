@@ -75,4 +75,41 @@
   .animate-fade-in-fast {
     animation: fadeIn 0.2s ease-in-out;
   }
+
+  /* リーチ演出用フラッシュアニメーション（4.1秒間） */
+  @keyframes reachFlash {
+    0%, 100% {
+      background: linear-gradient(135deg, #fed7aa 0%, #fb923c 50%, #dc2626 100%);
+      transform: scale(1.15);
+      box-shadow: 0 0 30px rgba(220, 38, 38, 0.8), 0 0 60px rgba(251, 146, 60, 0.6);
+    }
+    50% {
+      background: linear-gradient(135deg, #fca5a5 0%, #ef4444 50%, #991b1b 100%);
+      transform: scale(1.25);
+      box-shadow: 0 0 40px rgba(220, 38, 38, 1), 0 0 80px rgba(251, 146, 60, 0.8);
+    }
+  }
+
+  @keyframes reachTextFlash {
+    0%, 100% {
+      color: #fff;
+      text-shadow: 0 0 30px #f97316, 0 0 50px #ea580c, 0 0 70px #dc2626;
+    }
+    50% {
+      color: #fef08a;
+      text-shadow: 0 0 40px #fbbf24, 0 0 60px #f59e0b, 0 0 90px #dc2626;
+    }
+  }
+
+  .reach-flash {
+    animation: reachFlash 0.3s ease-in-out infinite;
+    font-weight: 900;
+    color: white;
+    z-index: 10;
+    position: relative;
+  }
+
+  .reach-text-flash {
+    animation: reachTextFlash 0.5s ease-in-out infinite;
+  }
 }

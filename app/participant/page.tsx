@@ -2,31 +2,35 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '../../lib/supabase/client';
-import { generateUniqueBingoCards, checkBingo, checkReach, BingoCardData, BingoSquare } from '../../lib/bingo';
+import { generateUniqueBingoCards, checkBingo, checkReach, getReachSquares, BingoCardData, BingoSquare } from '../../lib/bingo';
 import WinnerList from '../../components/winner-list';
 import MobileOnlyGuard from '../../components/mobile-only-guard';
 
 // --- UI Components (can be moved to separate files later) ---
 
-const CardSquare = ({ square }: { square: BingoSquare }) => (
+const CardSquare = ({ square, isReachSquare, showAnimation }: { square: BingoSquare, isReachSquare?: boolean, showAnimation?: boolean }) => (
   <div
     className={`w-12 h-12 flex items-center justify-center border text-center
     ${square.marked ? 'bg-yellow-300 text-gray-500 transform scale-90 rotate-6' : 'bg-white'}
     ${square.number === 'FREE' ? 'text-xs font-semibold' : 'text-lg font-bold'}
+    ${isReachSquare && showAnimation ? 'reach-flash' : ''}
     transition-all duration-300`}
   >
     {square.number}
   </div>
 );
 
-const BingoCardDisplay = ({ cardData }: { cardData: BingoCardData }) => (
+const BingoCardDisplay = ({ cardData, reachSquares, showReachAnimation }: { cardData: BingoCardData, reachSquares?: Array<{row: number, col: number}>, showReachAnimation?: boolean }) => (
   <div className="grid grid-cols-5 gap-1 bg-gray-300 p-1 rounded-lg shadow-inner">
     {['B', 'I', 'N', 'G', 'O'].map(letter => (
       <div key={letter} className="w-12 h-8 flex items-center justify-center text-base font-bold text-white bg-gray-600 rounded-t-md">{letter}</div>
     ))}
-    {cardData.flat().map((square, index) => (
-      <CardSquare key={index} square={square} />
-    ))}
+    {cardData.flat().map((square, index) => {
+      const row = Math.floor(index / 5);
+      const col = index % 5;
+      const isReachSquare = reachSquares?.some(rs => rs.row === row && rs.col === col) || false;
+      return <CardSquare key={index} square={square} isReachSquare={isReachSquare} showAnimation={showReachAnimation} />;
+    })}
   </div>
 );
 
@@ -58,6 +62,8 @@ export default function ParticipantPage() {
   const [drawnNumbers, setDrawnNumbers] = useState<number[]>([]);
   const [isBingo, setIsBingo] = useState(false);
   const [isReach, setIsReach] = useState(false);
+  const [reachSquares, setReachSquares] = useState<Array<{row: number, col: number}>>([]);
+  const [showReachAnimation, setShowReachAnimation] = useState(false);
 
   // ビンゴ達成音を再生
   const playBingoSound = () => {
@@ -136,33 +142,20 @@ export default function ParticipantPage() {
     }
   };
 
-  // リーチ達成音を再生
+  // リーチ達成音を再生（4.1秒間の演出に合わせる）
   const playReachSound = () => {
     if (typeof window === 'undefined') return;
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // リーチ音源を再生
+      const audio = new Audio('/リーチ.wav');
+      audio.volume = 0.8;
+      audio.play().catch(e => console.log('Reach audio play failed:', e));
 
-      // 緊張感のあるリーチ音（急上昇する音）
-      const notes = [440, 554.37, 659.25, 783.99]; // A4, C#5, E5, G5
-
-      notes.forEach((freq, index) => {
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-
-        oscillator.type = 'triangle'; // 柔らかい音
-        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
-
-        const startTime = audioContext.currentTime + index * 0.1;
-        gainNode.gain.setValueAtTime(0, startTime);
-        gainNode.gain.linearRampToValueAtTime(0.25, startTime + 0.05);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.4);
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        oscillator.start(startTime);
-        oscillator.stop(startTime + 0.4);
-      });
+      // 4.1秒後に音を停止（演出時間に合わせる）
+      setTimeout(() => {
+        audio.pause();
+        audio.currentTime = 0;
+      }, 4100);
     } catch (e) {
       console.log('Audio not supported');
     }
@@ -195,7 +188,14 @@ export default function ParticipantPage() {
     // リーチチェック（ビンゴ前のみ）
     else if (!isBingo && !isReach && checkReach(updatedCard)) {
       setIsReach(true);
+      setReachSquares(getReachSquares(updatedCard));
+      setShowReachAnimation(true);
       playReachSound();
+
+      // 4.1秒後にアニメーションを消す
+      setTimeout(() => {
+        setShowReachAnimation(false);
+      }, 4100);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawnNumbers]);
@@ -302,7 +302,34 @@ export default function ParticipantPage() {
                 <button
                   onClick={() => {
                     setIsReach(true);
+                    setShowReachAnimation(true);
+                    // テスト用にダミーのリーチスクエアを設定（最初の未マークの数字を強制的にリーチ扱い）
+                    if (selectedCard) {
+                      const realReachSquares = getReachSquares(selectedCard);
+                      if (realReachSquares.length > 0) {
+                        // 実際にリーチ状態ならそれを使う
+                        setReachSquares(realReachSquares);
+                      } else {
+                        // リーチ状態でない場合は、テスト用に最初の未マークマスを設定
+                        const firstUnmarked: Array<{row: number, col: number}> = [];
+                        for (let row = 0; row < 5; row++) {
+                          for (let col = 0; col < 5; col++) {
+                            if (!selectedCard[row][col].marked && selectedCard[row][col].number !== 'FREE') {
+                              firstUnmarked.push({ row, col });
+                              if (firstUnmarked.length >= 2) break; // 2つの数字を点滅させる
+                            }
+                          }
+                          if (firstUnmarked.length >= 2) break;
+                        }
+                        setReachSquares(firstUnmarked);
+                      }
+                    }
                     playReachSound();
+
+                    // 4.1秒後にアニメーションを消す
+                    setTimeout(() => {
+                      setShowReachAnimation(false);
+                    }, 4100);
                   }}
                   className="flex-1 px-3 py-2 text-sm font-semibold text-orange-700 bg-orange-100 border border-orange-300 rounded-md active:bg-orange-200"
                 >
@@ -364,20 +391,30 @@ export default function ParticipantPage() {
             </div>
             <div className="relative w-full p-4 space-y-4 bg-white rounded-lg shadow-md text-center">
               <h1 className="text-lg font-bold">{userName}さんのカード</h1>
-              <BingoCardDisplay cardData={selectedCard} />
+              <BingoCardDisplay cardData={selectedCard} reachSquares={reachSquares} showReachAnimation={showReachAnimation} />
               <div className="pt-3 text-center">
                 <h2 className="text-base font-semibold">抽選済み</h2>
                 <p className="text-2xl font-bold">{drawnNumbers.length} / 75</p>
               </div>
-              {isReach && !isBingo && (
-                <div className="absolute top-2 right-2 z-10">
-                  <div className="bg-gradient-to-r from-orange-400 to-red-500 text-white px-4 py-2 rounded-full shadow-lg animate-pulse font-bold text-sm">
-                    🔥 REACH!
+              {showReachAnimation && !isBingo && (
+                <div className="absolute inset-0 flex items-center justify-center z-10 rounded-lg pointer-events-none">
+                  <div className="text-center space-y-2 animate-bounce">
+                    <div className="text-7xl font-black text-white reach-text-flash" style={{
+                      textShadow: '0 0 30px #f97316, 0 0 50px #ea580c, 0 0 70px #dc2626',
+                      WebkitTextStroke: '2px #dc2626'
+                    }}>
+                      REACH!
+                    </div>
+                    <div className="flex gap-2 justify-center items-center">
+                      <span className="text-4xl">🔥</span>
+                      <span className="text-2xl font-bold text-orange-400 bg-white px-3 py-1 rounded-full">あと1つ!</span>
+                      <span className="text-4xl">🔥</span>
+                    </div>
                   </div>
                 </div>
               )}
               {isBingo && (
-                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-10 rounded-lg">
+                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-20 rounded-lg">
                   <div className="text-6xl font-black text-white animate-bounce" style={{ textShadow: '0 0 20px #fef08a, 0 0 30px #fde047' }}>BINGO!</div>
                 </div>
               )}

@@ -160,3 +160,62 @@ export const checkReach = (card: BingoCardData): boolean => {
 
   return false;
 };
+
+/**
+ * Finds the unmarked squares that would complete a reach line (for visual effects).
+ * @param card The BingoCardData to check.
+ * @returns {Array<{row: number, col: number}>} Array of positions of unmarked squares in reach lines.
+ */
+export const getReachSquares = (card: BingoCardData): Array<{row: number, col: number}> => {
+  const reachSquares: Array<{row: number, col: number}> = [];
+
+  // Check rows for reach (exactly 4 marked)
+  for (let i = 0; i < 5; i++) {
+    const markedCount = card[i].filter(square => square.marked).length;
+    if (markedCount === 4) {
+      // Find the unmarked square in this row
+      for (let j = 0; j < 5; j++) {
+        if (!card[i][j].marked) {
+          reachSquares.push({ row: i, col: j });
+        }
+      }
+    }
+  }
+
+  // Check columns for reach (exactly 4 marked)
+  for (let i = 0; i < 5; i++) {
+    const markedCount = card.filter(row => row[i].marked).length;
+    if (markedCount === 4) {
+      // Find the unmarked square in this column
+      for (let j = 0; j < 5; j++) {
+        if (!card[j][i].marked) {
+          reachSquares.push({ row: j, col: i });
+        }
+      }
+    }
+  }
+
+  // Check diagonal (top-left to bottom-right) for reach
+  const diagonalMarked = Array.from({ length: 5 }, (_, i) => card[i][i]).filter(square => square.marked).length;
+  if (diagonalMarked === 4) {
+    // Find the unmarked square in this diagonal
+    for (let i = 0; i < 5; i++) {
+      if (!card[i][i].marked) {
+        reachSquares.push({ row: i, col: i });
+      }
+    }
+  }
+
+  // Check anti-diagonal (top-right to bottom-left) for reach
+  const antiDiagonalMarked = Array.from({ length: 5 }, (_, i) => card[i][4 - i]).filter(square => square.marked).length;
+  if (antiDiagonalMarked === 4) {
+    // Find the unmarked square in this anti-diagonal
+    for (let i = 0; i < 5; i++) {
+      if (!card[i][4 - i].marked) {
+        reachSquares.push({ row: i, col: 4 - i });
+      }
+    }
+  }
+
+  return reachSquares;
+};
