@@ -9,6 +9,9 @@ import SlotMachine from '../../components/slot-machine';
 import MobileOnlyGuard from '../../components/mobile-only-guard';
 import { QRCodeSVG } from 'qrcode.react';
 
+// バージョン表示用（デプロイ確認用）
+const APP_VERSION = 'v2.0-latest';
+
 // --- UI Components ---
 
 const CardSquare = ({ square, isReachSquare, showAnimation }: { square: BingoSquare, isReachSquare?: boolean, showAnimation?: boolean }) => (
@@ -446,6 +449,9 @@ export default function OrganizerPage() {
               <WinnerList gameId={game.id} />
             </>
           )}
+        </div>
+        <div className="fixed bottom-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full opacity-70">
+          {APP_VERSION}
         </div>
       </div>
     </MobileOnlyGuard>

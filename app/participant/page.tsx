@@ -8,6 +8,9 @@ import ReachList from '../../components/reach-list';
 import MobileOnlyGuard from '../../components/mobile-only-guard';
 import SlotMachine from '../../components/slot-machine';
 
+// バージョン表示用（デプロイ確認用）
+const APP_VERSION = 'v2.0-latest';
+
 // --- UI Components (can be moved to separate files later) ---
 
 const CardSquare = ({ square, isReachSquare, showAnimation }: { square: BingoSquare, isReachSquare?: boolean, showAnimation?: boolean }) => (
@@ -500,6 +503,9 @@ export default function ParticipantPage() {
     <MobileOnlyGuard>
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
         {renderStep()}
+        <div className="fixed bottom-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full opacity-70">
+          {APP_VERSION}
+        </div>
       </div>
     </MobileOnlyGuard>
   );
