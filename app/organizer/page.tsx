@@ -7,6 +7,7 @@ import WinnerList from '../../components/winner-list';
 import ReachList from '../../components/reach-list';
 import SlotMachine from '../../components/slot-machine';
 import MobileOnlyGuard from '../../components/mobile-only-guard';
+import { QRCodeSVG } from 'qrcode.react';
 
 // --- UI Components ---
 
@@ -54,6 +55,7 @@ export default function OrganizerPage() {
   // State for animation
   const [isSpinning, setIsSpinning] = useState(false);
   const [numberToDraw, setNumberToDraw] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // 幹事の参加状態
   const [organizerStep, setOrganizerStep] = useState<'notJoined' | 'enterName' | 'selectCard' | 'playing'>('notJoined');
@@ -176,6 +178,19 @@ export default function OrganizerPage() {
     }
   };
 
+  const handleCopyUrl = async () => {
+    if (!game) return;
+    const participantUrl = `${window.location.origin}/participant?code=${game.game_code}`;
+    try {
+      await navigator.clipboard.writeText(participantUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      alert('URLのコピーに失敗しました');
+    }
+  };
+
   // 幹事の参加登録
   const handleOrganizerJoin = () => {
     if (!organizerName.trim()) {
@@ -274,11 +289,47 @@ export default function OrganizerPage() {
                 <p className="text-xs text-gray-700">3. 参加者が揃ったら、「次の数字を抽選する」ボタンを押してゲーム開始</p>
               </div>
               <div className="space-y-4 text-center">
-                <div>
-                  <p className="text-sm text-gray-600 mb-2">ゲームコード (参加者に共有):</p>
-                  <p className="text-3xl font-bold text-green-600 tracking-widest bg-gray-200 p-3 rounded-md">
-                    {game.game_code}
-                  </p>
+                {/* QRコードとURL共有 */}
+                <div className="bg-white border-2 border-green-500 p-4 rounded-lg">
+                  <h3 className="font-bold text-base text-gray-800 mb-3">📱 参加者の招待方法（2つの方法）</h3>
+
+                  {/* 方法1: QRコード */}
+                  <div className="mb-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-2">方法1: QRコードをスキャン</p>
+                    <div className="flex justify-center bg-white p-3 rounded-lg">
+                      <QRCodeSVG
+                        value={`${typeof window !== 'undefined' ? window.location.origin : ''}/participant?code=${game.game_code}`}
+                        size={200}
+                        level="M"
+                        includeMargin={true}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-600 mt-2">参加者がスマホカメラでスキャン→自動で参加画面へ</p>
+                  </div>
+
+                  {/* 方法2: URLリンク */}
+                  <div className="mb-3">
+                    <p className="text-sm font-semibold text-gray-700 mb-2">方法2: URLをLINEなどで共有</p>
+                    <button
+                      onClick={handleCopyUrl}
+                      className={`w-full px-4 py-3 text-sm font-semibold rounded-md transition-colors ${
+                        copied
+                          ? 'bg-green-500 text-white'
+                          : 'bg-blue-500 text-white active:bg-blue-600'
+                      }`}
+                    >
+                      {copied ? '✓ コピーしました！' : '📋 参加URLをコピー'}
+                    </button>
+                    <p className="text-xs text-gray-600 mt-2">コピーしたURLをLINEグループなどに貼り付け</p>
+                  </div>
+
+                  {/* 従来のゲームコード表示（念のため残す） */}
+                  <div className="pt-3 border-t border-gray-200">
+                    <p className="text-xs text-gray-500 mb-1">手動入力用ゲームコード:</p>
+                    <p className="text-xl font-bold text-gray-600 tracking-widest">
+                      {game.game_code}
+                    </p>
+                  </div>
                 </div>
 
                 {/* 参加者人数表示 */}
@@ -358,20 +409,6 @@ export default function OrganizerPage() {
                     )}
                   </div>
                 )}
-
-                {/* 開発用テストボタン */}
-                <div className="bg-orange-50 border border-orange-300 p-3 rounded-md">
-                  <p className="text-xs text-orange-700 mb-2">🧪 開発用テスト</p>
-                  <a
-                    href={`/participant?code=${game.game_code}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block w-full px-3 py-2 text-sm font-semibold text-orange-700 bg-orange-100 border border-orange-300 rounded-md active:bg-orange-200"
-                  >
-                    参加者画面を別タブで開く
-                  </a>
-                  <p className="text-xs text-orange-600 mt-1">※本番時は削除予定</p>
-                </div>
 
                 <button
                   onClick={handleDrawNumber}

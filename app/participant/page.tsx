@@ -367,17 +367,11 @@ export default function ParticipantPage() {
         return (
           <div className="w-full p-6 space-y-4 bg-white rounded-lg shadow-md">
             <h1 className="text-xl font-bold text-center">🎮 ゲームに参加する</h1>
-            {gameCode ? (
-              <div className="bg-orange-50 border-l-4 border-orange-500 p-3 rounded-lg text-left">
-                <p className="text-xs text-orange-700">🧪 開発テストモード：ゲームコードが自動入力されています</p>
-              </div>
-            ) : (
-              <div className="bg-green-50 border-l-4 border-green-500 p-3 rounded-lg text-left">
-                <h2 className="font-bold text-sm text-gray-800 mb-2">📝 参加方法</h2>
-                <p className="text-xs text-gray-700 mb-1">1. 幹事から教えてもらった6文字のゲームコードを入力</p>
-                <p className="text-xs text-gray-700">2. 「参加」ボタンを押してください</p>
-              </div>
-            )}
+            <div className="bg-green-50 border-l-4 border-green-500 p-3 rounded-lg text-left">
+              <h2 className="font-bold text-sm text-gray-800 mb-2">📝 参加方法</h2>
+              <p className="text-xs text-gray-700 mb-1">1. 幹事から教えてもらった6文字のゲームコードを入力</p>
+              <p className="text-xs text-gray-700">2. 「参加」ボタンを押してください</p>
+            </div>
             <input type="text" value={gameCode} onChange={(e) => setGameCode(e.target.value.toUpperCase())} placeholder="ゲームコード（例：ABC123）" className="w-full px-4 py-2 text-center text-xl tracking-widest border rounded-md" maxLength={6} />
             <button onClick={handleJoinGame} className="w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-md active:bg-blue-700">参加</button>
             {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
@@ -423,100 +417,6 @@ export default function ParticipantPage() {
               </p>
             </div>
 
-            {/* 開発用テストボタン */}
-            <div className="w-full bg-orange-50 border border-orange-300 p-3 rounded-lg">
-              <p className="text-xs text-orange-700 mb-2">🧪 開発用テスト</p>
-              <div className="flex gap-2 mb-2">
-                <button
-                  onClick={() => {
-                    setIsReach(true);
-                    setShowReachAnimation(true);
-                    // テスト用にダミーのリーチスクエアを設定（最初の未マークの数字を強制的にリーチ扱い）
-                    if (selectedCard) {
-                      const realReachSquares = getReachSquares(selectedCard);
-                      if (realReachSquares.length > 0) {
-                        // 実際にリーチ状態ならそれを使う
-                        setReachSquares(realReachSquares);
-                      } else {
-                        // リーチ状態でない場合は、テスト用に最初の未マークマスを設定
-                        const firstUnmarked: Array<{row: number, col: number}> = [];
-                        for (let row = 0; row < 5; row++) {
-                          for (let col = 0; col < 5; col++) {
-                            if (!selectedCard[row][col].marked && selectedCard[row][col].number !== 'FREE') {
-                              firstUnmarked.push({ row, col });
-                              if (firstUnmarked.length >= 2) break; // 2つの数字を点滅させる
-                            }
-                          }
-                          if (firstUnmarked.length >= 2) break;
-                        }
-                        setReachSquares(firstUnmarked);
-                      }
-                    }
-                    playReachSound();
-
-                    // 4.1秒後にアニメーションを消す
-                    setTimeout(() => {
-                      setShowReachAnimation(false);
-                    }, 4100);
-                  }}
-                  className="flex-1 px-3 py-2 text-sm font-semibold text-orange-700 bg-orange-100 border border-orange-300 rounded-md active:bg-orange-200"
-                >
-                  リーチ演出を視聴
-                </button>
-                <button
-                  onClick={() => {
-                    setIsBingo(true);
-                    playBingoSound();
-                  }}
-                  className="flex-1 px-3 py-2 text-sm font-semibold text-green-700 bg-green-100 border border-green-300 rounded-md active:bg-green-200"
-                >
-                  ビンゴ演出を視聴
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => {
-                    const audio = new Audio('/sounds/victory-trumpet.wav');
-                    audio.volume = 0.8;
-                    audio.play().catch(e => console.log('Play failed:', e));
-                  }}
-                  className="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 border border-blue-300 rounded-md active:bg-blue-200"
-                >
-                  トランペット
-                </button>
-                <button
-                  onClick={() => {
-                    const audio = new Audio('/sounds/celebration-melody.wav');
-                    audio.volume = 0.6;
-                    audio.play().catch(e => console.log('Play failed:', e));
-                  }}
-                  className="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 border border-blue-300 rounded-md active:bg-blue-200"
-                >
-                  メロディー
-                </button>
-                <button
-                  onClick={() => {
-                    const audio = new Audio('/sounds/bingo-cheer.wav');
-                    audio.volume = 0.7;
-                    audio.play().catch(e => console.log('Play failed:', e));
-                  }}
-                  className="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 border border-blue-300 rounded-md active:bg-blue-200"
-                >
-                  歓声
-                </button>
-                <button
-                  onClick={() => {
-                    const audio = new Audio('/sounds/whistle.wav');
-                    audio.volume = 0.6;
-                    audio.play().catch(e => console.log('Play failed:', e));
-                  }}
-                  className="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 border border-blue-300 rounded-md active:bg-blue-200"
-                >
-                  口笛
-                </button>
-              </div>
-              <p className="text-xs text-orange-600 mt-1">※本番時は削除予定</p>
-            </div>
             <div className="relative w-full p-4 space-y-4 bg-white rounded-lg shadow-md text-center">
               <h1 className="text-lg font-bold">{userName}さんのカード</h1>
               <BingoCardDisplay cardData={selectedCard} reachSquares={reachSquares} showReachAnimation={showReachAnimation} />
