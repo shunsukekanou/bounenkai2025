@@ -37,9 +37,16 @@ const BingoCardDisplay = ({ cardData, reachSquares, showReachAnimation }: { card
 
 // --- Main Page Component ---
 
+interface AvailableGame {
+  id: string;
+  game_code: string;
+  created_at: string;
+  drawn_numbers: number[];
+}
+
 export default function ParticipantPage() {
   const supabase = createClient();
-  const [step, setStep] = useState<'enterCode' | 'enterName' | 'selectCard' | 'playing'>('enterCode');
+  const [step, setStep] = useState<'autoDetect' | 'selectGame' | 'enterCode' | 'enterName' | 'selectCard' | 'playing'>('autoDetect');
   const [error, setError] = useState('');
 
   // Game and Participant state
@@ -47,15 +54,50 @@ export default function ParticipantPage() {
   const [gameId, setGameId] = useState<string | null>(null);
   const [userName, setUserName] = useState('');
   const [participantId, setParticipantId] = useState<string | null>(null);
+  const [availableGames, setAvailableGames] = useState<AvailableGame[]>([]);
 
-  // URLパラメータからゲームコードを自動入力
+  // URLパラメータからゲームコードを自動入力、または自動検出
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const codeFromUrl = urlParams.get('code');
     if (codeFromUrl) {
+      // URLにコードがある場合は従来通り
       setGameCode(codeFromUrl.toUpperCase());
+      setStep('enterCode');
+    } else {
+      // URLにコードがない場合は自動検出
+      fetchAvailableGames();
     }
   }, []);
+
+  // アクティブなゲームを自動検出
+  const fetchAvailableGames = async () => {
+    const { data, error } = await supabase
+      .from('games')
+      .select('id, game_code, created_at, drawn_numbers')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (error) {
+      console.error('Error fetching games:', error);
+      setError('ゲームの取得に失敗しました');
+      setStep('enterCode');
+    } else if (data && data.length > 0) {
+      setAvailableGames(data);
+      if (data.length === 1) {
+        // ゲームが1つだけの場合は自動選択
+        setStep('selectGame');
+      } else {
+        // 複数ある場合は選択画面
+        setStep('selectGame');
+      }
+    } else {
+      // ゲームがない場合は手動入力へ
+      setError('現在進行中のゲームがありません');
+      setStep('enterCode');
+    }
+  };
 
   // Card and Bingo state
   const [cardsToSelect, setCardsToSelect] = useState<BingoCardData[]>([]);
@@ -214,6 +256,13 @@ export default function ParticipantPage() {
     setStep('enterName');
   };
 
+  const handleSelectGame = (game: AvailableGame) => {
+    setGameId(game.id);
+    setGameCode(game.game_code);
+    setDrawnNumbers(game.drawn_numbers || []);
+    setStep('enterName');
+  };
+
   const handleSetName = async () => {
     if (!userName.trim()) return setError('名前を入力してください。');
     if (!gameId) return setError('ゲームIDが見つかりません。');
@@ -242,6 +291,78 @@ export default function ParticipantPage() {
 
   const renderStep = () => {
     switch (step) {
+      case 'autoDetect':
+        return (
+          <div className="w-full p-6 space-y-4 bg-white rounded-lg shadow-md text-center">
+            <h1 className="text-xl font-bold">🔍 ゲームを検索中...</h1>
+            <div className="animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+            </div>
+          </div>
+        );
+      case 'selectGame':
+        return (
+          <div className="w-full p-6 space-y-4 bg-white rounded-lg shadow-md">
+            <h1 className="text-xl font-bold text-center">🎮 ゲームに参加する</h1>
+            {availableGames.length === 1 ? (
+              <>
+                <div className="bg-green-50 border-l-4 border-green-500 p-3 rounded-lg text-left">
+                  <h2 className="font-bold text-sm text-gray-800 mb-2">✅ 進行中のゲームが見つかりました</h2>
+                  <p className="text-xs text-gray-700">下のボタンを押すだけで参加できます</p>
+                </div>
+                <div className="bg-blue-100 border border-blue-300 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">ゲームコード:</p>
+                  <p className="text-2xl font-bold text-blue-600 tracking-widest mb-2">{availableGames[0].game_code}</p>
+                  <p className="text-xs text-gray-500">
+                    作成日時: {new Date(availableGames[0].created_at).toLocaleString('ja-JP')}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    抽選済み: {availableGames[0].drawn_numbers.length} / 75
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleSelectGame(availableGames[0])}
+                  className="w-full px-4 py-3 text-base font-semibold text-white bg-green-600 rounded-md active:bg-green-700"
+                >
+                  このゲームに参加
+                </button>
+                <button
+                  onClick={() => setStep('enterCode')}
+                  className="w-full px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 rounded-md active:bg-gray-200"
+                >
+                  別のゲームに参加（コード入力）
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg text-left">
+                  <h2 className="font-bold text-sm text-gray-800 mb-2">🎯 複数のゲームが進行中です</h2>
+                  <p className="text-xs text-gray-700">参加したいゲームを選択してください</p>
+                </div>
+                <div className="space-y-3">
+                  {availableGames.map((game) => (
+                    <div
+                      key={game.id}
+                      onClick={() => handleSelectGame(game)}
+                      className="bg-blue-50 border-2 border-blue-300 p-4 rounded-lg active:scale-95 transition-transform cursor-pointer"
+                    >
+                      <p className="text-lg font-bold text-blue-600 tracking-widest mb-1">{game.game_code}</p>
+                      <p className="text-xs text-gray-600">作成: {new Date(game.created_at).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className="text-xs text-gray-600">抽選済み: {game.drawn_numbers.length} / 75</p>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setStep('enterCode')}
+                  className="w-full px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 rounded-md active:bg-gray-200"
+                >
+                  コードを手動入力
+                </button>
+              </>
+            )}
+          </div>
+        );
       case 'enterCode':
         return (
           <div className="w-full p-6 space-y-4 bg-white rounded-lg shadow-md">
