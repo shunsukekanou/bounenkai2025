@@ -7,7 +7,7 @@ import WinnerList from '../../components/winner-list';
 import ReachList from '../../components/reach-list';
 import SlotMachine from '../../components/slot-machine';
 import MobileOnlyGuard from '../../components/mobile-only-guard';
-import { QRCodeSVG } from 'qrcode.react';
+// import { QRCodeSVG } from 'qrcode.react'; // 一時的にコメントアウト（Vercelビルドエラー回避）
 
 // バージョン表示用（デプロイ確認用）
 const APP_VERSION = 'v2.0-latest';
@@ -296,8 +296,8 @@ export default function OrganizerPage() {
                 <div className="bg-white border-2 border-green-500 p-4 rounded-lg">
                   <h3 className="font-bold text-base text-gray-800 mb-3">📱 参加者の招待方法（2つの方法）</h3>
 
-                  {/* 方法1: QRコード */}
-                  <div className="mb-4">
+                  {/* 方法1: QRコード - 一時的にコメントアウト（Vercelビルドエラー回避） */}
+                  {/* <div className="mb-4">
                     <p className="text-sm font-semibold text-gray-700 mb-2">方法1: QRコードをスキャン</p>
                     <div className="flex justify-center bg-white p-3 rounded-lg">
                       <QRCodeSVG
@@ -308,7 +308,7 @@ export default function OrganizerPage() {
                       />
                     </div>
                     <p className="text-xs text-gray-600 mt-2">参加者がスマホカメラでスキャン→自動で参加画面へ</p>
-                  </div>
+                  </div> */}
 
                   {/* 方法2: URLリンク */}
                   <div className="mb-3">
