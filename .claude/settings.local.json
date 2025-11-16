@@ -37,7 +37,9 @@
       "Bash(psql:*)",
       "Bash(echo $DATABASE_URL)",
       "Bash(echo $NEXT_PUBLIC_SUPABASE_URL)",
-      "Bash(ss:*)"
+      "Bash(ss:*)",
+      "Bash(bash)",
+      "Bash(supabase --version:*)"
     ],
     "deny": [],
     "ask": []
