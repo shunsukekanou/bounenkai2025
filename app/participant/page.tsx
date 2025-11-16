@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '../../lib/supabase/client';
 import { generateUniqueBingoCards, checkBingo, checkReach, getReachSquares, BingoCardData, BingoSquare } from '../../lib/bingo';
 import WinnerList from '../../components/winner-list';
 import ReachList from '../../components/reach-list';
 import MobileOnlyGuard from '../../components/mobile-only-guard';
+import SlotMachine from '../../components/slot-machine';
 
 // --- UI Components (can be moved to separate files later) ---
 
@@ -107,6 +108,11 @@ export default function ParticipantPage() {
   const [isReach, setIsReach] = useState(false);
   const [reachSquares, setReachSquares] = useState<Array<{row: number, col: number}>>([]);
   const [showReachAnimation, setShowReachAnimation] = useState(false);
+
+  // Slot machine state for real-time animation
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [numberToDraw, setNumberToDraw] = useState<number | null>(null);
+  const prevDrawnNumbersLength = useRef(0);
 
   // ビンゴ達成音を再生
   const playBingoSound = () => {
@@ -210,7 +216,19 @@ export default function ParticipantPage() {
     if (!gameId) return;
     const channel = supabase.channel(`game-${gameId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${gameId}` },
-        (payload) => setDrawnNumbers(payload.new.drawn_numbers || []))
+        (payload) => {
+          const newDrawnNumbers = payload.new.drawn_numbers || [];
+
+          // 新しい番号が追加されたかチェック
+          if (newDrawnNumbers.length > prevDrawnNumbersLength.current) {
+            const latestNumber = newDrawnNumbers[newDrawnNumbers.length - 1];
+            setNumberToDraw(latestNumber);
+            setIsSpinning(true);
+          }
+
+          setDrawnNumbers(newDrawnNumbers);
+          prevDrawnNumbersLength.current = newDrawnNumbers.length;
+        })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [gameId, supabase]);
@@ -285,6 +303,11 @@ export default function ParticipantPage() {
     if (error) return console.error('Could not count winners', error);
     const rank = (data?.length || 0) + 1;
     await supabase.from('participants').update({ bingo_rank: rank }).eq('id', participantId);
+  };
+
+  // スロットマシンアニメーション終了時のコールバック
+  const handleSlotAnimationEnd = () => {
+    setIsSpinning(false);
   };
 
   // --- Render Logic ---
@@ -417,13 +440,30 @@ export default function ParticipantPage() {
               </p>
             </div>
 
+            {/* スロットマシンアニメーション */}
+            <div className="flex justify-center">
+              <SlotMachine drawnNumber={numberToDraw} isSpinning={isSpinning} onAnimationEnd={handleSlotAnimationEnd} />
+            </div>
+
+            {/* 抽選済み数字一覧 */}
+            <div className="pt-4">
+              <h2 className="text-base font-semibold text-center text-gray-700 mb-2">抽選済み数字 ({drawnNumbers.length} / 75)</h2>
+              <div className="flex flex-wrap justify-center gap-2 p-3 bg-gray-50 rounded-md border min-h-[50px]">
+                {drawnNumbers.length === 0 ? (
+                  <p className="text-xs text-gray-500">まだ数字は抽選されていません</p>
+                ) : (
+                  drawnNumbers.map((num) => (
+                    <span key={num} className="flex items-center justify-center w-10 h-10 text-base font-bold text-gray-800 bg-white border rounded-full shadow">
+                      {num}
+                    </span>
+                  ))
+                )}
+              </div>
+            </div>
+
             <div className="relative w-full p-4 space-y-4 bg-white rounded-lg shadow-md text-center">
               <h1 className="text-lg font-bold">{userName}さんのカード</h1>
               <BingoCardDisplay cardData={selectedCard} reachSquares={reachSquares} showReachAnimation={showReachAnimation} />
-              <div className="pt-3 text-center">
-                <h2 className="text-base font-semibold">抽選済み</h2>
-                <p className="text-2xl font-bold">{drawnNumbers.length} / 75</p>
-              </div>
               {showReachAnimation && !isBingo && (
                 <div className="absolute inset-0 flex items-center justify-center z-10 rounded-lg pointer-events-none">
                   <div className="text-center space-y-2 animate-bounce">
