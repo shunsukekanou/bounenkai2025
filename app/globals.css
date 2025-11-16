@@ -112,4 +112,34 @@
   .reach-text-flash {
     animation: reachTextFlash 0.5s ease-in-out infinite;
   }
+
+  /* リーチリスト用のゆっくりとしたパルスアニメーション */
+  @keyframes pulseSlow {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.85;
+      transform: scale(1.02);
+    }
+  }
+
+  .animate-pulse-slow {
+    animation: pulseSlow 2s ease-in-out infinite;
+  }
+
+  /* リーチリスト用の微妙なバウンスアニメーション */
+  @keyframes bounceSubtle {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+
+  .animate-bounce-subtle {
+    animation: bounceSubtle 1.5s ease-in-out infinite;
+  }
 }

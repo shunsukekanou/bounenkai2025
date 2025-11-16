@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '../../lib/supabase/client';
 import { generateUniqueBingoCards, checkBingo, checkReach, getReachSquares, BingoCardData, BingoSquare } from '../../lib/bingo';
 import WinnerList from '../../components/winner-list';
+import ReachList from '../../components/reach-list';
 import MobileOnlyGuard from '../../components/mobile-only-guard';
 
 // --- UI Components (can be moved to separate files later) ---
@@ -191,6 +192,7 @@ export default function ParticipantPage() {
       setReachSquares(getReachSquares(updatedCard));
       setShowReachAnimation(true);
       playReachSound();
+      claimReach(); // データベースにリーチ状態を保存
 
       // 4.1秒後にアニメーションを消す
       setTimeout(() => {
@@ -221,6 +223,11 @@ export default function ParticipantPage() {
     setParticipantId(data.id);
     setCardsToSelect(generateUniqueBingoCards(3));
     setStep('selectCard');
+  };
+
+  const claimReach = async () => {
+    if (!gameId || !participantId) return;
+    await supabase.from('participants').update({ is_reach: true }).eq('id', participantId);
   };
 
   const claimBingo = async () => {
@@ -419,6 +426,7 @@ export default function ParticipantPage() {
                 </div>
               )}
             </div>
+            <ReachList gameId={gameId} />
             <WinnerList gameId={gameId} />
           </div>
         );

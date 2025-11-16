@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { createClient } from '../../lib/supabase/client';
 import WinnerList from '../../components/winner-list';
+import ReachList from '../../components/reach-list';
 import SlotMachine from '../../components/slot-machine';
 import MobileOnlyGuard from '../../components/mobile-only-guard';
 
@@ -154,7 +155,12 @@ export default function OrganizerPage() {
             </div>
           </div>
 
-          {game && <WinnerList gameId={game.id} />}
+          {game && (
+            <>
+              <ReachList gameId={game.id} />
+              <WinnerList gameId={game.id} />
+            </>
+          )}
         </div>
       </div>
     </MobileOnlyGuard>
