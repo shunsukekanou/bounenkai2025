@@ -76,6 +76,7 @@ export default function OrganizerPage() {
   useEffect(() => {
     if (!channel) return;
     channel.on('broadcast', { event: 'start_spin' }, (payload: any) => {
+      // Correctly access the nested payload
       setNumberToDraw(payload.payload.newNumber);
       setIsSpinning(true);
     });
@@ -170,6 +171,8 @@ export default function OrganizerPage() {
     };
   }, [game, supabase]);
 
+
+
   const generateGameCode = () => {
     const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
     let result = '';
@@ -243,7 +246,6 @@ export default function OrganizerPage() {
     await supabase.from('participants').update({ bingo_rank: rank }).eq('id', organizerId);
   };
 
-  // Step 1: Broadcasts the spin event
   const handleDrawNumber = () => {
     if (!game || isSpinning || !channel) return;
 
