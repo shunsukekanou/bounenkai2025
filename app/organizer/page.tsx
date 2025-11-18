@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '../../lib/supabase/client';
 import { generateUniqueBingoCards, checkBingo, checkReach, getReachSquares, BingoCardData, BingoSquare } from '../../lib/bingo';
 import WinnerList from '../../components/winner-list';
@@ -71,6 +71,11 @@ export default function OrganizerPage() {
   const [isReach, setIsReach] = useState(false);
   const [reachSquares, setReachSquares] = useState<Array<{row: number, col: number}>>([]);
   const [showReachAnimation, setShowReachAnimation] = useState(false);
+
+  // Refs for scrolling
+  const bingoCardRef = useRef<HTMLDivElement>(null);
+  const winnerListRef = useRef<HTMLDivElement>(null);
+  const reachListRef = useRef<HTMLDivElement>(null);
 
   // Audio state
   const audioContextRef = React.useRef<AudioContext | null>(null);
@@ -252,6 +257,26 @@ export default function OrganizerPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawnNumbers]);
+
+  // Scroll to winner list on bingo
+  useEffect(() => {
+    if (isBingo && winnerListRef.current) {
+      winnerListRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => {
+        bingoCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 8000);
+    }
+  }, [isBingo]);
+
+  // Scroll to reach list on reach
+  useEffect(() => {
+    if (isReach && reachListRef.current) {
+      reachListRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => {
+        bingoCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 8000);
+    }
+  }, [isReach]);
 
   // リアルタイムで参加者数を取得
   useEffect(() => {
@@ -537,7 +562,7 @@ export default function OrganizerPage() {
                 )}
 
                 {organizerStep === 'playing' && selectedCard && (
-                  <div className="relative bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg">
+                  <div ref={bingoCardRef} className="relative bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg">
                     <h3 className="font-bold text-sm text-gray-800 mb-2">🎯 {organizerName}さんのカード</h3>
                     <div className="flex justify-center">
                       <BingoCardDisplay cardData={selectedCard} reachSquares={reachSquares} showReachAnimation={showReachAnimation} />
@@ -582,8 +607,12 @@ export default function OrganizerPage() {
 
                 {game && (
                   <>
-                    <WinnerList gameId={game.id} />
-                    <ReachList gameId={game.id} />
+                    <div ref={winnerListRef}>
+                      <WinnerList gameId={game.id} />
+                    </div>
+                    <div ref={reachListRef}>
+                      <ReachList gameId={game.id} />
+                    </div>
                   </>
                 )}
               </div>

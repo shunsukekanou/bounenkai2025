@@ -149,6 +149,11 @@ export default function ParticipantPage() {
   const [reachSquares, setReachSquares] = useState<Array<{row: number, col: number}>>([]);
   const [showReachAnimation, setShowReachAnimation] = useState(false);
 
+  // Refs for scrolling
+  const bingoCardRef = useRef<HTMLDivElement>(null);
+  const winnerListRef = useRef<HTMLDivElement>(null);
+  const reachListRef = useRef<HTMLDivElement>(null);
+
   // Slot machine state for real-time animation
   const [isSpinning, setIsSpinning] = useState(false);
   const [numberToDraw, setNumberToDraw] = useState<number | null>(null);
@@ -211,7 +216,7 @@ export default function ParticipantPage() {
   // カード選択時のクリック音
   const playClickSound = () => {
     if (typeof window === 'undefined' || !audioContextRef.current) return;
-    const audioContext = audioContextRef.current;
+    const audioContext = audioContext.current;
     try {
       // const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
@@ -299,6 +304,26 @@ export default function ParticipantPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawnNumbers]);
+
+  // Scroll to winner list on bingo
+  useEffect(() => {
+    if (isBingo && winnerListRef.current) {
+      winnerListRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => {
+        bingoCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 8000);
+    }
+  }, [isBingo]);
+
+  // Scroll to reach list on reach
+  useEffect(() => {
+    if (isReach && reachListRef.current) {
+      reachListRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => {
+        bingoCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 8000);
+    }
+  }, [isReach]);
 
   // --- Database Functions ---
 
@@ -481,7 +506,7 @@ export default function ParticipantPage() {
               </p>
             </div>
 
-            <div className="relative w-full p-4 space-y-4 bg-white rounded-lg shadow-md text-center">
+            <div ref={bingoCardRef} className="relative w-full p-4 space-y-4 bg-white rounded-lg shadow-md text-center">
               <h1 className="text-lg font-bold">{userName}さんのカード</h1>
               <BingoCardDisplay cardData={selectedCard} reachSquares={reachSquares} showReachAnimation={showReachAnimation} />
               {showReachAnimation && !isBingo && (
@@ -519,8 +544,12 @@ export default function ParticipantPage() {
               />
             </div>
 
-            <WinnerList gameId={gameId} />
-            <ReachList gameId={gameId} />
+            <div ref={winnerListRef}>
+              <WinnerList gameId={gameId} />
+            </div>
+            <div ref={reachListRef}>
+              <ReachList gameId={gameId} />
+            </div>
           </div>
         );
       default:
