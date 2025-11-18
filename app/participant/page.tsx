@@ -59,6 +59,25 @@ export default function ParticipantPage() {
   const [userName, setUserName] = useState('');
   const [participantId, setParticipantId] = useState<string | null>(null);
   const [availableGames, setAvailableGames] = useState<AvailableGame[]>([]);
+  const audioUnlocked = useRef(false); // 音声の自動再生ロック解除を追跡
+
+  // ブラウザの音声自動再生ポリシーを回避するための関数
+  const unlockAudio = () => {
+    if (typeof window === 'undefined' || audioUnlocked.current) return;
+    // 空のAudioオブジェクトを作成し、ミュート状態で再生を試みる
+    // これが成功すると、同じページ内での後続の音声再生が許可される
+    const audio = new Audio();
+    audio.muted = true;
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        // 一度成功すれば、フラグを立てて再度実行しない
+        audioUnlocked.current = true;
+      }).catch(error => {
+        console.warn('Audio unlock failed, will be retried on next user interaction.', error);
+      });
+    }
+  };
 
   // URLパラメータからゲームコードを自動入力、または自動検出
   useEffect(() => {
@@ -264,6 +283,7 @@ export default function ParticipantPage() {
   // --- Database Functions ---
 
   const handleJoinGame = async () => {
+    unlockAudio(); // 音声再生許可を取得
     if (!gameCode.trim()) return setError('ゲームコードを入力してください。');
     setError('');
     const { data, error: fetchError } = await supabase.from('games').select('id, drawn_numbers').eq('game_code', gameCode.toUpperCase()).single();
@@ -274,6 +294,7 @@ export default function ParticipantPage() {
   };
 
   const handleSelectGame = (game: AvailableGame) => {
+    unlockAudio(); // 音声再生許可を取得
     setGameId(game.id);
     setGameCode(game.game_code);
     setDrawnNumbers(game.drawn_numbers || []);
@@ -281,6 +302,7 @@ export default function ParticipantPage() {
   };
 
   const handleSetName = async () => {
+    unlockAudio(); // 音声再生許可を取得
     if (!userName.trim()) return setError('名前を入力してください。');
     if (!gameId) return setError('ゲームIDが見つかりません。');
     setError('');
@@ -422,7 +444,7 @@ export default function ParticipantPage() {
             </div>
             <div className="flex flex-col items-center gap-4 pt-2">
               {cardsToSelect.map((card, i) => (
-                <div key={i} onClick={() => { playClickSound(); setSelectedCard(card); setStep('playing'); }} className="active:scale-95 transition-transform duration-200">
+                <div key={i} onClick={() => { unlockAudio(); playClickSound(); setSelectedCard(card); setStep('playing'); }} className="active:scale-95 transition-transform duration-200">
                   <BingoCardDisplay cardData={card} />
                 </div>
               ))}
