@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '../lib/supabase/client';
 
 // Define the Winner type
@@ -12,11 +12,24 @@ interface Winner {
 
 interface WinnerListProps {
   gameId: string | null;
+  onNewWinner?: (name: string) => void;
 }
 
-export default function WinnerList({ gameId }: WinnerListProps) {
+export default function WinnerList({ gameId, onNewWinner }: WinnerListProps) {
   const supabase = createClient();
   const [winners, setWinners] = useState<Winner[]>([]);
+  const prevWinnersRef = useRef<Winner[]>([]);
+
+  // 新しいビンゴ者を検知して親コンポーネントに通知
+  useEffect(() => {
+    if (onNewWinner && winners.length > prevWinnersRef.current.length) {
+      const newWinner = winners.find(w => !prevWinnersRef.current.some(pw => pw.id === w.id));
+      if (newWinner) {
+        onNewWinner(newWinner.user_name);
+      }
+    }
+    prevWinnersRef.current = winners;
+  }, [winners, onNewWinner]);
 
   useEffect(() => {
     if (!gameId) return;

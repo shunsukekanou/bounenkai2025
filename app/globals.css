@@ -147,4 +147,13 @@
     mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
   }
+
+  @keyframes marquee {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100vw); }
+  }
+
+  .animate-marquee {
+    animation: marquee 5s linear;
+  }
 }

@@ -148,6 +148,7 @@ export default function ParticipantPage() {
   const [isReach, setIsReach] = useState(false);
   const [reachSquares, setReachSquares] = useState<Array<{row: number, col: number}>>([]);
   const [showReachAnimation, setShowReachAnimation] = useState(false);
+  const [marqueeMessage, setMarqueeMessage] = useState('');
 
   // Refs for scrolling
   const bingoCardRef = useRef<HTMLDivElement>(null);
@@ -304,6 +305,17 @@ export default function ParticipantPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawnNumbers]);
+
+  // Marquee handlers
+  const handleNewWinner = (name: string) => {
+    setMarqueeMessage(`${name}さん BINGO!!!`);
+    setTimeout(() => setMarqueeMessage(''), 5000);
+  };
+
+  const handleNewReach = (name: string) => {
+    setMarqueeMessage(`${name}さん リーチ!!!`);
+    setTimeout(() => setMarqueeMessage(''), 5000);
+  };
 
   // Scroll to winner list on bingo
   useEffect(() => {
@@ -545,10 +557,10 @@ export default function ParticipantPage() {
             </div>
 
             <div ref={winnerListRef}>
-              <WinnerList gameId={gameId} />
+              <WinnerList gameId={gameId} onNewWinner={handleNewWinner} />
             </div>
             <div ref={reachListRef}>
-              <ReachList gameId={gameId} />
+              <ReachList gameId={gameId} onNewReach={handleNewReach} />
             </div>
           </div>
         );
@@ -561,6 +573,13 @@ export default function ParticipantPage() {
     <MobileOnlyGuard>
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
         {renderStep()}
+        {marqueeMessage && (
+          <div className="fixed bottom-1/2 left-0 w-full overflow-hidden z-50 pointer-events-none">
+            <p className="animate-marquee whitespace-nowrap text-6xl font-black text-red-600" style={{ textShadow: '2px 2px 4px white' }}>
+              {marqueeMessage}
+            </p>
+          </div>
+        )}
         <div className="fixed bottom-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full opacity-70">
           {APP_VERSION}
         </div>

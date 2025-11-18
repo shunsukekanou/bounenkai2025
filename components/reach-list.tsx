@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '../lib/supabase/client';
 
 // Define the ReachPlayer type
@@ -12,11 +12,24 @@ interface ReachPlayer {
 
 interface ReachListProps {
   gameId: string | null;
+  onNewReach?: (name: string) => void;
 }
 
-export default function ReachList({ gameId }: ReachListProps) {
+export default function ReachList({ gameId, onNewReach }: ReachListProps) {
   const supabase = createClient();
   const [reachPlayers, setReachPlayers] = useState<ReachPlayer[]>([]);
+  const prevReachPlayersRef = useRef<ReachPlayer[]>([]);
+
+  // 新しいリーチ者を検知して親コンポーネントに通知
+  useEffect(() => {
+    if (onNewReach && reachPlayers.length > prevReachPlayersRef.current.length) {
+      const newPlayer = reachPlayers.find(p => !prevReachPlayersRef.current.some(pp => pp.id === p.id));
+      if (newPlayer) {
+        onNewReach(newPlayer.user_name);
+      }
+    }
+    prevReachPlayersRef.current = reachPlayers;
+  }, [reachPlayers, onNewReach]);
 
   useEffect(() => {
     if (!gameId) return;
