@@ -104,32 +104,54 @@ export default function SlotMachine({ drawnNumber, isSpinning, onAnimationEnd }:
     }
   };
 
+  const spinStartTime = useRef<number>(0);
+
   useEffect(() => {
-    if (isSpinning && drawnNumber !== null) {
+    // isSpinning が true になったらアニメーションを開始
+    if (isSpinning) {
       // ドラムロール音を再生
       playDrumroll();
-
-      // 初期化：ルーレット回転（3.4秒間）
-      setAnimationSpeed(20);
-      const spinStartTime = Date.now();
+      spinStartTime.current = Date.now();
 
       const fastSpin = () => {
-        const elapsed = Date.now() - spinStartTime;
+        const elapsed = Date.now() - spinStartTime.current;
 
+        // 3.4秒間、高速回転を続ける
         if (elapsed < 3400) {
-          // ルーレット回転（3.4秒間）
           setDisplayNumbers(Array.from({ length: 5 }, () => Math.floor(Math.random() * 75) + 1));
           setRotation(prev => (prev + 72) % 360); // 激しく回転
-          timeoutId.current = setTimeout(fastSpin, 20);
+          animationFrameId.current = requestAnimationFrame(fastSpin);
         } else {
-          // 最終段階：3テンポでゆっくり停止
-          slowStop();
+          // 3.4秒経過したら、アニメーションフレームをキャンセルして停止シーケンスに移行
+          if (animationFrameId.current) {
+            cancelAnimationFrame(animationFrameId.current);
+            animationFrameId.current = null;
+          }
+          // drawnNumber が null の場合は、onAnimationEnd が呼ばれるまで待機
+          if (drawnNumber !== null) {
+            slowStop();
+          }
         }
       };
 
-      fastSpin();
-    } else if (!isSpinning && drawnNumber) {
-      setDisplayNumbers([drawnNumber]);
+      // アニメーションループを開始
+      animationFrameId.current = requestAnimationFrame(fastSpin);
+
+    } else {
+      // isSpinning が false になったら、すべてをクリーンアップ
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+        animationFrameId.current = null;
+      }
+      if (timeoutId.current) {
+        clearTimeout(timeoutId.current);
+        timeoutId.current = null;
+      }
+      stopDrumroll();
+      // 最終的な数字を確実に表示
+      if (drawnNumber) {
+        setDisplayNumbers([drawnNumber]);
+      }
       setRotation(0);
     }
 
@@ -138,7 +160,23 @@ export default function SlotMachine({ drawnNumber, isSpinning, onAnimationEnd }:
       if (timeoutId.current) clearTimeout(timeoutId.current);
       stopDrumroll();
     };
-  }, [isSpinning, drawnNumber]);
+    // isSpinning の変更時のみこのエフェクトを実行
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSpinning]);
+
+  // drawnNumber が更新されたら、必要に応じて停止シーケンスを開始
+  useEffect(() => {
+    // スピンが終了すべきタイミング (3.4秒後) を過ぎていて、かつ drawnNumber が届いた場合
+    if (isSpinning && drawnNumber !== null && spinStartTime.current > 0 && Date.now() - spinStartTime.current >= 3400) {
+      // まだ fastSpin ループが動いていれば止める
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+        animationFrameId.current = null;
+      }
+      slowStop();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawnNumber]);
 
   const slowStop = () => {
     // ドラムロール音を停止

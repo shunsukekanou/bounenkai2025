@@ -250,16 +250,18 @@ export default function OrganizerPage() {
     const randomIndex = Math.floor(Math.random() * availableNumbers.length);
     const newNumber = availableNumbers[randomIndex];
 
-    // 管理者自身のアニメーションを即座に開始
-    setNumberToDraw(newNumber);
-    setIsSpinning(true);
-
-    // 参加者にブロードキャスト
+    // 先に参加者にブロードキャスト
     channel.send({
       type: 'broadcast',
       event: 'start_spin',
       payload: { newNumber },
     });
+
+    // 管理者自身のアニメーションを少し遅らせて開始し、同期を改善
+    setTimeout(() => {
+      setNumberToDraw(newNumber);
+      setIsSpinning(true);
+    }, 300); // 300msの遅延
   };
 
   // Step 2: Saves the number after animation ends
