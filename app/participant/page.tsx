@@ -490,12 +490,12 @@ export default function ParticipantPage() {
             {/* スロットマシンとリストのコンテナ */}
             <div className="flex justify-around items-start gap-2 md:gap-4 w-full">
               {/* Left Column: Reach List */}
-              <div className="w-1/4">
+              <div className="flex-grow min-w-0">
                 <ReachList gameId={gameId} />
               </div>
 
               {/* Center Column: Slot Machine */}
-              <div className="w-1/2 flex justify-center">
+              <div className="flex-grow-2 min-w-0 flex justify-center">
                 <SlotMachine
                   drawnNumber={numberToDraw}
                   isSpinning={isSpinning}
@@ -506,7 +506,7 @@ export default function ParticipantPage() {
               </div>
 
               {/* Right Column: Winner List */}
-              <div className="w-1/4">
+              <div className="flex-grow min-w-0">
                 <WinnerList gameId={gameId} />
               </div>
             </div>

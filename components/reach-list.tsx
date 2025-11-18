@@ -66,10 +66,8 @@ export default function ReachList({ gameId }: ReachListProps) {
 
   return (
     <div className="p-4 bg-gradient-to-r from-orange-100 to-red-100 rounded-lg shadow-md border-2 border-orange-400 animate-pulse-slow">
-      <h2 className="text-xl font-bold text-center text-orange-800 mb-3 flex items-center justify-center gap-2">
-        <span className="text-2xl">🔥</span>
+      <h2 className="text-xl font-bold text-center text-orange-800 mb-3">
         REACH!
-        <span className="text-2xl">🔥</span>
       </h2>
       <div className="space-y-2 max-h-48 overflow-y-auto list-fade-bottom">
         {reachPlayers.map((player) => (
@@ -77,7 +75,7 @@ export default function ReachList({ gameId }: ReachListProps) {
             key={player.id}
             className="flex items-center justify-center p-2 bg-white rounded-lg shadow animate-bounce-subtle"
           >
-            <span className="text-lg font-bold text-orange-600">
+            <span className="text-base font-bold text-orange-600">
               {player.user_name}さん
             </span>
             <span className="ml-2 text-sm text-gray-600">があと1つ!</span>

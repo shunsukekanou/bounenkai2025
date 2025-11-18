@@ -559,12 +559,12 @@ export default function OrganizerPage() {
 
                 <div className="flex justify-around items-start gap-2 md:gap-4 w-full pt-4">
                   {/* Left Column: Reach List */}
-                  <div className="w-1/4">
+                  <div className="flex-grow min-w-0">
                     {game && <ReachList gameId={game.id} />}
                   </div>
 
                   {/* Center Column: Button and Slot Machine */}
-                  <div className="w-1/2 flex flex-col items-center gap-4">
+                  <div className="flex-grow-2 min-w-0 flex flex-col items-center gap-4">
                     <button
                       onClick={handleDrawNumber}
                       disabled={isSpinning || participantCount < 2}
@@ -585,7 +585,7 @@ export default function OrganizerPage() {
                   </div>
 
                   {/* Right Column: Winner List */}
-                  <div className="w-1/4">
+                  <div className="flex-grow min-w-0">
                     {game && <WinnerList gameId={game.id} />}
                   </div>
                 </div>

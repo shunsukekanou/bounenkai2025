@@ -69,7 +69,7 @@ export default function WinnerList({ gameId }: WinnerListProps) {
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
-        🏆 BINGO RANKING 🏆
+        BINGO RANKING
       </h2>
       {winners.length === 0 ? (
         <p className="text-center text-gray-500">まだビンゴの人はいません...</p>
@@ -84,7 +84,7 @@ export default function WinnerList({ gameId }: WinnerListProps) {
                 {winner.bingo_rank}
                 <sup className="text-xs">{getRankSuffix(winner.bingo_rank)}</sup>
               </span>
-              <span className="text-lg font-semibold text-gray-800">
+              <span className="text-base font-semibold text-gray-800">
                 {winner.user_name}
               </span>
             </li>
