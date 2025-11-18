@@ -54,6 +54,7 @@ export default function OrganizerPage() {
   const [game, setGame] = useState<Game | null>(null);
   const [drawnNumbers, setDrawnNumbers] = useState<number[]>([]);
   const [participantCount, setParticipantCount] = useState(0);
+  const [channel, setChannel] = useState<any>(null);
 
   // State for animation
   const [isSpinning, setIsSpinning] = useState(false);
@@ -70,6 +71,15 @@ export default function OrganizerPage() {
   const [isReach, setIsReach] = useState(false);
   const [reachSquares, setReachSquares] = useState<Array<{row: number, col: number}>>([]);
   const [showReachAnimation, setShowReachAnimation] = useState(false);
+
+  // Listen for broadcast events
+  useEffect(() => {
+    if (!channel) return;
+    channel.on('broadcast', { event: 'start_spin' }, (payload: any) => {
+      setNumberToDraw(payload.payload.newNumber);
+      setIsSpinning(true);
+    });
+  }, [channel]);
 
   // 音声再生関数
   const playBingoSound = () => {
@@ -178,6 +188,9 @@ export default function OrganizerPage() {
     } else {
       setGame(data);
       setDrawnNumbers(data.drawn_numbers || []);
+      const newChannel = supabase.channel(`game-${data.id}`);
+      newChannel.subscribe();
+      setChannel(newChannel);
     }
   };
 
@@ -230,9 +243,9 @@ export default function OrganizerPage() {
     await supabase.from('participants').update({ bingo_rank: rank }).eq('id', organizerId);
   };
 
-  // Step 1: Starts the animation
+  // Step 1: Broadcasts the spin event
   const handleDrawNumber = () => {
-    if (!game || isSpinning) return;
+    if (!game || isSpinning || !channel) return;
 
     const availableNumbers = Array.from({ length: 75 }, (_, i) => i + 1).filter(num => !drawnNumbers.includes(num));
     if (availableNumbers.length === 0) {
@@ -243,8 +256,11 @@ export default function OrganizerPage() {
     const randomIndex = Math.floor(Math.random() * availableNumbers.length);
     const newNumber = availableNumbers[randomIndex];
     
-    setNumberToDraw(newNumber);
-    setIsSpinning(true);
+    channel.send({
+      type: 'broadcast',
+      event: 'start_spin',
+      payload: { newNumber },
+    });
   };
 
   // Step 2: Saves the number after animation ends

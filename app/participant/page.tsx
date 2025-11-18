@@ -221,17 +221,13 @@ export default function ParticipantPage() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${gameId}` },
         (payload) => {
           const newDrawnNumbers = payload.new.drawn_numbers || [];
-
-          // 新しい番号が追加されたかチェック
-          if (newDrawnNumbers.length > prevDrawnNumbersLength.current) {
-            const latestNumber = newDrawnNumbers[newDrawnNumbers.length - 1];
-            setNumberToDraw(latestNumber);
-            setIsSpinning(true);
-          }
-
           setDrawnNumbers(newDrawnNumbers);
           prevDrawnNumbersLength.current = newDrawnNumbers.length;
         })
+      .on('broadcast', { event: 'start_spin' }, (payload) => {
+        setNumberToDraw(payload.payload.newNumber);
+        setIsSpinning(true);
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [gameId, supabase]);
