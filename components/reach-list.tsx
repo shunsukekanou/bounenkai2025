@@ -28,7 +28,8 @@ export default function ReachList({ gameId }: ReachListProps) {
         .select('id, user_name, is_reach')
         .eq('game_id', gameId)
         .eq('is_reach', true)
-        .is('bingo_rank', null); // リーチでビンゴ未達成の人のみ
+        .is('bingo_rank', null) // リーチでビンゴ未達成の人のみ
+        .order('created_at', { ascending: true });
 
       if (error) {
         console.error('Error fetching reach players:', error);
@@ -64,13 +65,13 @@ export default function ReachList({ gameId }: ReachListProps) {
   }
 
   return (
-    <div className="w-full p-4 bg-gradient-to-r from-orange-100 to-red-100 rounded-lg shadow-md border-2 border-orange-400 animate-pulse-slow">
+    <div className="p-4 bg-gradient-to-r from-orange-100 to-red-100 rounded-lg shadow-md border-2 border-orange-400 animate-pulse-slow">
       <h2 className="text-xl font-bold text-center text-orange-800 mb-3 flex items-center justify-center gap-2">
         <span className="text-2xl">🔥</span>
         REACH!
         <span className="text-2xl">🔥</span>
       </h2>
-      <div className="space-y-2">
+      <div className="space-y-2 max-h-48 overflow-y-auto list-fade-bottom">
         {reachPlayers.map((player) => (
           <div
             key={player.id}

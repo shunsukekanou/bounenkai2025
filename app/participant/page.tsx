@@ -487,18 +487,29 @@ export default function ParticipantPage() {
               </p>
             </div>
 
-            {/* スロットマシンアニメーション */}
-            <div className="flex justify-center">
-              <SlotMachine
-                drawnNumber={numberToDraw}
-                isSpinning={isSpinning}
-                onAnimationEnd={handleSlotAnimationEnd}
-                audioContext={audioContextRef.current}
-                rouletteBuffer={rouletteBuffer}
-              />
+            {/* スロットマシンとリストのコンテナ */}
+            <div className="flex justify-around items-start gap-2 md:gap-4 w-full">
+              {/* Left Column: Reach List */}
+              <div className="w-1/4">
+                <ReachList gameId={gameId} />
+              </div>
+
+              {/* Center Column: Slot Machine */}
+              <div className="w-1/2 flex justify-center">
+                <SlotMachine
+                  drawnNumber={numberToDraw}
+                  isSpinning={isSpinning}
+                  onAnimationEnd={handleSlotAnimationEnd}
+                  audioContext={audioContextRef.current}
+                  rouletteBuffer={rouletteBuffer}
+                />
+              </div>
+
+              {/* Right Column: Winner List */}
+              <div className="w-1/4">
+                <WinnerList gameId={gameId} />
+              </div>
             </div>
-
-
 
             <div className="relative w-full p-4 space-y-4 bg-white rounded-lg shadow-md text-center">
               <h1 className="text-lg font-bold">{userName}さんのカード</h1>
@@ -526,8 +537,6 @@ export default function ParticipantPage() {
                 </div>
               )}
             </div>
-            <ReachList gameId={gameId} />
-            <WinnerList gameId={gameId} />
           </div>
         );
       default:

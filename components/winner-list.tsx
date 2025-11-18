@@ -67,14 +67,14 @@ export default function WinnerList({ gameId }: WinnerListProps) {
   };
 
   return (
-    <div className="w-full p-4 bg-white rounded-lg shadow-md mt-6">
+    <div className="p-4 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
         🏆 BINGO RANKING 🏆
       </h2>
       {winners.length === 0 ? (
         <p className="text-center text-gray-500">まだビンゴの人はいません...</p>
       ) : (
-        <ol className="space-y-3">
+        <ol className="space-y-3 max-h-48 overflow-y-auto list-fade-bottom">
           {winners.map((winner) => (
             <li
               key={winner.id}

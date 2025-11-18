@@ -557,35 +557,42 @@ export default function OrganizerPage() {
                   </div>
                 )}
 
-                <button
-                  onClick={handleDrawNumber}
-                  disabled={isSpinning || participantCount < 2}
-                  className="w-full px-4 py-3 text-base font-semibold text-white bg-green-600 rounded-md active:bg-green-700 disabled:bg-gray-400"
-                >
-                  {isSpinning ? '抽選中...' : participantCount < 2 ? '参加者を待っています...' : '次の数字を抽選する'}
-                </button>
+                <div className="flex justify-around items-start gap-2 md:gap-4 w-full pt-4">
+                  {/* Left Column: Reach List */}
+                  <div className="w-1/4">
+                    {game && <ReachList gameId={game.id} />}
+                  </div>
 
-                <div className="flex justify-center">
-                  <SlotMachine
-                    drawnNumber={numberToDraw}
-                    isSpinning={isSpinning}
-                    onAnimationEnd={saveDrawnNumber}
-                    audioContext={audioContextRef.current}
-                    rouletteBuffer={rouletteBuffer}
-                  />
+                  {/* Center Column: Button and Slot Machine */}
+                  <div className="w-1/2 flex flex-col items-center gap-4">
+                    <button
+                      onClick={handleDrawNumber}
+                      disabled={isSpinning || participantCount < 2}
+                      className="w-full px-4 py-3 text-base font-semibold text-white bg-green-600 rounded-md active:bg-green-700 disabled:bg-gray-400"
+                    >
+                      {isSpinning ? '抽選中...' : participantCount < 2 ? '参加者を待っています...' : '次の数字を抽選する'}
+                    </button>
+
+                    <div className="flex justify-center">
+                      <SlotMachine
+                        drawnNumber={numberToDraw}
+                        isSpinning={isSpinning}
+                        onAnimationEnd={saveDrawnNumber}
+                        audioContext={audioContextRef.current}
+                        rouletteBuffer={rouletteBuffer}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Column: Winner List */}
+                  <div className="w-1/4">
+                    {game && <WinnerList gameId={game.id} />}
+                  </div>
                 </div>
               </div>
             </>
           )}
 
-
-
-          {game && (
-            <>
-              <ReachList gameId={game.id} />
-              <WinnerList gameId={game.id} />
-            </>
-          )}
         </div>
         <div className="fixed bottom-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full opacity-70">
           {APP_VERSION}
