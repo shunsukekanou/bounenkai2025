@@ -562,38 +562,30 @@ export default function OrganizerPage() {
                   </div>
                 )}
 
-                <div className="flex justify-around items-start gap-2 md:gap-4 w-full pt-4">
-                  {/* Left Column: Reach List */}
-                  <div className="flex-grow min-w-0">
-                    {game && <ReachList gameId={game.id} />}
-                  </div>
+                <button
+                  onClick={handleDrawNumber}
+                  disabled={isSpinning || participantCount < 2}
+                  className="w-full px-4 py-3 text-base font-semibold text-white bg-green-600 rounded-md active:bg-green-700 disabled:bg-gray-400"
+                >
+                  {isSpinning ? '抽選中...' : participantCount < 2 ? '参加者を待っています...' : '次の数字を抽選する'}
+                </button>
 
-                  {/* Center Column: Button and Slot Machine */}
-                  <div className="flex-grow-2 min-w-0 flex flex-col items-center gap-4">
-                    <button
-                      onClick={handleDrawNumber}
-                      disabled={isSpinning || participantCount < 2}
-                      className="w-full px-4 py-3 text-base font-semibold text-white bg-green-600 rounded-md active:bg-green-700 disabled:bg-gray-400"
-                    >
-                      {isSpinning ? '抽選中...' : participantCount < 2 ? '参加者を待っています...' : '次の数字を抽選する'}
-                    </button>
-
-                    <div className="flex justify-center">
-                      <SlotMachine
-                        drawnNumber={numberToDraw}
-                        isSpinning={isSpinning}
-                        onAnimationEnd={saveDrawnNumber}
-                        audioContext={audioContextRef.current}
-                        rouletteBuffer={rouletteBuffer}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Right Column: Winner List */}
-                  <div className="flex-grow min-w-0">
-                    {game && <WinnerList gameId={game.id} />}
-                  </div>
+                <div className="flex justify-center">
+                  <SlotMachine
+                    drawnNumber={numberToDraw}
+                    isSpinning={isSpinning}
+                    onAnimationEnd={saveDrawnNumber}
+                    audioContext={audioContextRef.current}
+                    rouletteBuffer={rouletteBuffer}
+                  />
                 </div>
+
+                {game && (
+                  <>
+                    <WinnerList gameId={game.id} />
+                    <ReachList gameId={game.id} />
+                  </>
+                )}
               </div>
             </>
           )}

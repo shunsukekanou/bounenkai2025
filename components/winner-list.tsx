@@ -67,26 +67,21 @@ export default function WinnerList({ gameId }: WinnerListProps) {
   };
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow-md">
+    <div className="w-full p-4 bg-white rounded-lg shadow-md mt-6">
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
         BINGO
       </h2>
       {winners.length === 0 ? (
         <p className="text-center text-gray-500">まだビンゴの人はいません...</p>
       ) : (
-        <ol className="space-y-3 max-h-48 overflow-y-auto list-fade-bottom">
+        <ol className="grid grid-cols-3 gap-x-4 gap-y-2 max-h-48 overflow-y-auto list-fade-bottom">
           {winners.map((winner) => (
             <li
               key={winner.id}
-              className="flex items-center justify-between p-3 bg-yellow-100 rounded-lg shadow animate-fade-in"
+              className="flex items-center justify-center p-2 bg-yellow-100 rounded-lg shadow animate-fade-in"
             >
-              <span className="text-xl font-bold text-yellow-700">
-                {winner.bingo_rank}
-                <sup className="text-xs">{getRankSuffix(winner.bingo_rank)}</sup>
-              </span>
-              <span className="text-base font-semibold text-gray-800">
-                {winner.user_name}
-              </span>
+              <span className="text-sm font-bold text-yellow-700 mr-2">{winner.bingo_rank}位</span>
+              <span className="text-sm font-semibold text-gray-800 truncate">{winner.user_name}</span>
             </li>
           ))}
         </ol>
