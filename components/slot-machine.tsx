@@ -6,53 +6,63 @@ interface SlotMachineProps {
   drawnNumber: number | null;
   isSpinning: boolean;
   onAnimationEnd: () => void;
+  audioContext: AudioContext | null;
+  rouletteBuffer: AudioBuffer | null;
 }
 
-export default function SlotMachine({ drawnNumber, isSpinning, onAnimationEnd }: SlotMachineProps) {
+export default function SlotMachine({ drawnNumber, isSpinning, onAnimationEnd, audioContext, rouletteBuffer }: SlotMachineProps) {
   const [displayNumbers, setDisplayNumbers] = useState<number[]>([]);
   const [rotation, setRotation] = useState(0);
-  const [animationSpeed, setAnimationSpeed] = useState(50); // ms
   const animationFrameId = useRef<number | null>(null);
   const timeoutId = useRef<NodeJS.Timeout | null>(null);
-  const rouletteAudioRef = useRef<HTMLAudioElement | null>(null);
-
-  // 音声ファイルを初期化
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      rouletteAudioRef.current = new Audio('/sounds/roulette.wav');
-      rouletteAudioRef.current.loop = true; // ループ再生
-      rouletteAudioRef.current.volume = 0.7; // 音量調整（0.0〜1.0）
-    }
-  }, []);
+  const rouletteSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   // 音声関数
   const playDrumroll = () => {
-    if (rouletteAudioRef.current) {
+    if (!audioContext || !rouletteBuffer) return;
+
+    // 再生前にコンテキストの状態をチェック/再開
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+
+    // 既存のsourceがあれば停止して破棄
+    if (rouletteSourceRef.current) {
       try {
-        rouletteAudioRef.current.currentTime = 0; // 最初から再生
-        rouletteAudioRef.current.play().catch(e => console.log('Audio play failed:', e));
+        rouletteSourceRef.current.stop();
       } catch (e) {
-        console.log('Audio not supported');
+        // 既に停止している場合にエラーがスローされることがある
       }
+      rouletteSourceRef.current = null;
+    }
+
+    try {
+      const source = audioContext.createBufferSource();
+      source.buffer = rouletteBuffer;
+      source.loop = true;
+      source.connect(audioContext.destination);
+      source.start();
+      rouletteSourceRef.current = source;
+    } catch (e) {
+      console.error('Error playing drumroll:', e);
     }
   };
 
   const stopDrumroll = () => {
-    if (rouletteAudioRef.current) {
+    if (rouletteSourceRef.current) {
       try {
-        rouletteAudioRef.current.pause();
-        rouletteAudioRef.current.currentTime = 0;
+        rouletteSourceRef.current.stop();
       } catch (e) {
-        // Already stopped
+        // stop() can throw if already stopped or not started
       }
+      rouletteSourceRef.current = null;
     }
   };
 
   // 「てっ」という止まりかけの音
   const playTickSound = () => {
-    if (typeof window === 'undefined') return;
+    if (!audioContext) return;
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
 
@@ -74,10 +84,8 @@ export default function SlotMachine({ drawnNumber, isSpinning, onAnimationEnd }:
   };
 
   const playWinSound = () => {
-    if (typeof window === 'undefined') return;
+    if (!audioContext) return;
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-
       // ファンファーレのような音
       const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
 

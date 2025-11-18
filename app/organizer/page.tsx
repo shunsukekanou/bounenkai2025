@@ -72,30 +72,157 @@ export default function OrganizerPage() {
   const [reachSquares, setReachSquares] = useState<Array<{row: number, col: number}>>([]);
   const [showReachAnimation, setShowReachAnimation] = useState(false);
 
+  // Audio state
+  const audioContextRef = React.useRef<AudioContext | null>(null);
+  const audioUnlocked = React.useRef(false);
+  const [rouletteBuffer, setRouletteBuffer] = React.useState<AudioBuffer | null>(null);
 
+  // ブラウザの音声自動再生ポリシーを回避するための関数
+  const unlockAudio = () => {
+    if (typeof window === 'undefined' || audioUnlocked.current || !audioContextRef.current) return;
+    if (audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume().then(() => {
+        audioUnlocked.current = true;
+      }).catch(e => console.error("AudioContext resume failed.", e));
+    } else {
+      audioUnlocked.current = true;
+    }
+  };
+
+  // AudioContextの初期化と音声ファイルの読み込み
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !audioContextRef.current) {
+      try {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      } catch (e) {
+        console.error("AudioContext is not supported.", e);
+        return;
+      }
+    }
+    
+    const audioContext = audioContextRef.current;
+    if (audioContext && !rouletteBuffer) {
+      fetch('/sounds/roulette.wav')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.arrayBuffer();
+        })
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+          setRouletteBuffer(audioBuffer);
+        })
+        .catch(e => console.error("Error loading or decoding roulette sound:", e));
+    }
+  }, []);
 
   // 音声再生関数
   const playBingoSound = () => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !audioContextRef.current) return;
+    const audioContext = audioContextRef.current;
     try {
-      const cheerAudio = new Audio('/sounds/bingo-cheer.wav');
-      cheerAudio.volume = 0.7;
-      cheerAudio.play().catch(e => console.log('Cheer audio play failed:', e));
+      // 歓声音を再生
+      fetch('/sounds/bingo-cheer.wav')
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+          const source = audioContext.createBufferSource();
+          source.buffer = audioBuffer;
+          const gainNode = audioContext.createGain();
+          gainNode.gain.value = 0.7;
+          source.connect(gainNode).connect(audioContext.destination);
+          source.start(0);
+        })
+        .catch(e => console.error('Cheer audio play failed:', e));
+
+      // お祝いのメロディーを再生
+      fetch('/sounds/celebration-melody.wav')
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+          const source = audioContext.createBufferSource();
+          source.buffer = audioBuffer;
+          const gainNode = audioContext.createGain();
+          gainNode.gain.value = 0.6;
+          source.connect(gainNode).connect(audioContext.destination);
+          source.start(0);
+        })
+        .catch(e => console.error('Melody audio play failed:', e));
+
+      // 勝利のトランペットを再生
+      fetch('/sounds/victory-trumpet.wav')
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+          const source = audioContext.createBufferSource();
+          source.buffer = audioBuffer;
+          const gainNode = audioContext.createGain();
+          gainNode.gain.value = 0.8;
+          source.connect(gainNode).connect(audioContext.destination);
+          source.start(0);
+        })
+        .catch(e => console.error('Trumpet audio play failed:', e));
+
+      // 口笛を再生
+      fetch('/sounds/whistle.wav')
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+          const source = audioContext.createBufferSource();
+          source.buffer = audioBuffer;
+          const gainNode = audioContext.createGain();
+          gainNode.gain.value = 0.6;
+          source.connect(gainNode).connect(audioContext.destination);
+          source.start(0);
+        })
+        .catch(e => console.error('Whistle audio play failed:', e));
+
+      // 華やかなビンゴ音（上昇音階）
+      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+
+      notes.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+
+        const startTime = audioContext.currentTime + index * 0.1;
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(0.4, startTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.6);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 0.6);
+      });
     } catch (e) {
       console.log('Audio not supported');
     }
   };
 
   const playReachSound = () => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !audioContextRef.current) return;
+    const audioContext = audioContextRef.current;
     try {
-      const audio = new Audio('/リーチ.wav');
-      audio.volume = 0.8;
-      audio.play().catch(e => console.log('Reach audio play failed:', e));
-      setTimeout(() => {
-        audio.pause();
-        audio.currentTime = 0;
-      }, 4100);
+      // リーチ音源を再生
+      fetch('/リーチ.wav')
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+          const source = audioContext.createBufferSource();
+          source.buffer = audioBuffer;
+          const gainNode = audioContext.createGain();
+          gainNode.gain.value = 0.8;
+          source.connect(gainNode).connect(audioContext.destination);
+          source.start(0);
+          // 4.1秒後に音を停止（演出時間に合わせる）
+          source.stop(audioContext.currentTime + 4.1);
+        })
+        .catch(e => console.error('Reach audio play failed:', e));
     } catch (e) {
       console.log('Audio not supported');
     }
@@ -175,6 +302,7 @@ export default function OrganizerPage() {
   };
 
   const handleCreateGame = async () => {
+    unlockAudio(); // 最初のクリックで音声再生を有効化
     const gameCode = generateGameCode();
     const { data, error } = await supabase.from('games').insert({ game_code: gameCode, status: 'active', drawn_numbers: [] }).select().single();
     if (error) {
@@ -438,7 +566,13 @@ export default function OrganizerPage() {
                 </button>
 
                 <div className="flex justify-center">
-                  <SlotMachine drawnNumber={numberToDraw} isSpinning={isSpinning} onAnimationEnd={saveDrawnNumber} />
+                  <SlotMachine
+                    drawnNumber={numberToDraw}
+                    isSpinning={isSpinning}
+                    onAnimationEnd={saveDrawnNumber}
+                    audioContext={audioContextRef.current}
+                    rouletteBuffer={rouletteBuffer}
+                  />
                 </div>
               </div>
             </>

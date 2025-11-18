@@ -60,24 +60,48 @@ export default function ParticipantPage() {
   const [participantId, setParticipantId] = useState<string | null>(null);
   const [availableGames, setAvailableGames] = useState<AvailableGame[]>([]);
   const audioUnlocked = useRef(false); // 音声の自動再生ロック解除を追跡
+  const audioContextRef = useRef<AudioContext | null>(null); // AudioContextを共有
+  const [rouletteBuffer, setRouletteBuffer] = useState<AudioBuffer | null>(null);
 
   // ブラウザの音声自動再生ポリシーを回避するための関数
   const unlockAudio = () => {
-    if (typeof window === 'undefined' || audioUnlocked.current) return;
-    // 空のAudioオブジェクトを作成し、ミュート状態で再生を試みる
-    // これが成功すると、同じページ内での後続の音声再生が許可される
-    const audio = new Audio();
-    audio.muted = true;
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        // 一度成功すれば、フラグを立てて再度実行しない
+    if (typeof window === 'undefined' || audioUnlocked.current || !audioContextRef.current) return;
+    if (audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume().then(() => {
         audioUnlocked.current = true;
-      }).catch(error => {
-        console.warn('Audio unlock failed, will be retried on next user interaction.', error);
-      });
+      }).catch(e => console.error("AudioContext resume failed.", e));
+    } else {
+      audioUnlocked.current = true;
     }
   };
+
+  // AudioContextの初期化と音声ファイルの読み込み
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !audioContextRef.current) {
+      try {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      } catch (e) {
+        console.error("AudioContext is not supported.", e);
+        return;
+      }
+    }
+    
+    const audioContext = audioContextRef.current;
+    if (audioContext && !rouletteBuffer) {
+      fetch('/sounds/roulette.wav')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.arrayBuffer();
+        })
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+          setRouletteBuffer(audioBuffer);
+        })
+        .catch(e => console.error("Error loading or decoding roulette sound:", e));
+    }
+  }, []);
 
   // URLパラメータからゲームコードを自動入力、または自動検出
   useEffect(() => {
@@ -138,7 +162,8 @@ export default function ParticipantPage() {
 
   // ビンゴ達成音を再生
   const playBingoSound = () => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !audioContextRef.current) return;
+    const audioContext = audioContextRef.current;
     try {
       // 歓声音を再生
       const cheerAudio = new Audio('/sounds/bingo-cheer.wav');
@@ -161,7 +186,7 @@ export default function ParticipantPage() {
       whistleAudio.play().catch(e => console.log('Whistle audio play failed:', e));
 
       // ファンファーレ音を再生
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 
       // 華やかなビンゴ音（上昇音階）
       const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
@@ -191,9 +216,10 @@ export default function ParticipantPage() {
 
   // カード選択時のクリック音
   const playClickSound = () => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !audioContextRef.current) return;
+    const audioContext = audioContextRef.current;
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
 
@@ -463,7 +489,13 @@ export default function ParticipantPage() {
 
             {/* スロットマシンアニメーション */}
             <div className="flex justify-center">
-              <SlotMachine drawnNumber={numberToDraw} isSpinning={isSpinning} onAnimationEnd={handleSlotAnimationEnd} />
+              <SlotMachine
+                drawnNumber={numberToDraw}
+                isSpinning={isSpinning}
+                onAnimationEnd={handleSlotAnimationEnd}
+                audioContext={audioContextRef.current}
+                rouletteBuffer={rouletteBuffer}
+              />
             </div>
 
             {/* 抽選済み数字一覧 */}
