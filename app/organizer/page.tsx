@@ -262,12 +262,12 @@ export default function OrganizerPage() {
   // Marquee handlers
   const handleNewWinner = (name: string) => {
     setMarqueeMessage(`${name}さん BINGO!!!`);
-    setTimeout(() => setMarqueeMessage(''), 5000);
+    setTimeout(() => setMarqueeMessage(''), 6000);
   };
 
   const handleNewReach = (name: string) => {
     setMarqueeMessage(`${name}さん リーチ!!!`);
-    setTimeout(() => setMarqueeMessage(''), 5000);
+    setTimeout(() => setMarqueeMessage(''), 6000);
   };
 
   // Scroll to winner list on bingo
