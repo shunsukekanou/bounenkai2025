@@ -578,20 +578,7 @@ export default function OrganizerPage() {
             </>
           )}
 
-          <div className="pt-4">
-            <h2 className="text-base font-semibold text-center text-gray-700 mb-2">抽選済み数字 ({drawnNumbers.length} / 75)</h2>
-            <div className="flex flex-wrap justify-center gap-2 p-3 bg-gray-50 rounded-md border min-h-[50px]">
-              {drawnNumbers.length === 0 ? (
-                <p className="text-xs text-gray-500">まだ数字は抽選されていません</p>
-              ) : (
-                drawnNumbers.map((num) => (
-                  <span key={num} className="flex items-center justify-center w-10 h-10 text-base font-bold text-gray-800 bg-white border rounded-full shadow">
-                    {num}
-                  </span>
-                ))
-              )}
-            </div>
-          </div>
+
 
           {game && (
             <>
