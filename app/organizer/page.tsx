@@ -258,10 +258,17 @@ export default function OrganizerPage() {
     if (!game) return;
 
     const fetchParticipantCount = async () => {
-      const { count, error } = await supabase
+      let query = supabase
         .from('participants')
         .select('*', { count: 'exact', head: true })
         .eq('game_id', game.id);
+
+      // もし幹事が参加済みなら、カウントから除外する
+      if (organizerId) {
+        query = query.not('id', 'eq', organizerId);
+      }
+      
+      const { count, error } = await query;
 
       if (error) {
         console.error('Error fetching participant count:', error);
@@ -288,7 +295,7 @@ export default function OrganizerPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [game, supabase]);
+  }, [game, supabase, organizerId]);
 
 
 
