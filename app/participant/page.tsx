@@ -15,7 +15,7 @@ const APP_VERSION = 'v2.0-latest';
 
 const CardSquare = ({ square, isReachSquare, showAnimation }: { square: BingoSquare, isReachSquare?: boolean, showAnimation?: boolean }) => (
   <div
-    className={`w-12 h-12 flex items-center justify-center border text-center
+    className={`aspect-square flex items-center justify-center border text-center
     ${square.marked ? 'bg-yellow-300 text-gray-500 transform scale-90 rotate-6' : 'bg-white'}
     ${square.number === 'FREE' ? 'text-xs font-semibold' : 'text-lg font-bold'}
     ${isReachSquare && showAnimation ? 'reach-flash' : ''}
@@ -26,7 +26,7 @@ const CardSquare = ({ square, isReachSquare, showAnimation }: { square: BingoSqu
 );
 
 const BingoCardDisplay = ({ cardData, reachSquares, showReachAnimation }: { cardData: BingoCardData, reachSquares?: Array<{row: number, col: number}>, showReachAnimation?: boolean }) => (
-  <div className="grid grid-cols-5 gap-1 bg-gray-300 p-1 rounded-lg shadow-inner">
+  <div className="max-w-xs mx-auto grid grid-cols-5 gap-1 bg-gray-300 p-1 rounded-lg shadow-inner">
     {['B', 'I', 'N', 'G', 'O'].map(letter => (
       <div key={letter} className="w-12 h-8 flex items-center justify-center text-base font-bold text-white bg-gray-600 rounded-t-md">{letter}</div>
     ))}
