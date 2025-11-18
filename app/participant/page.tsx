@@ -124,21 +124,15 @@ export default function ParticipantPage() {
       .select('id, game_code, created_at, drawn_numbers')
       .eq('status', 'active')
       .order('created_at', { ascending: false })
-      .limit(5);
+      .limit(1); // 最新のゲーム1件のみを取得
 
     if (error) {
       console.error('Error fetching games:', error);
       setError('ゲームの取得に失敗しました');
       setStep('enterCode');
     } else if (data && data.length > 0) {
-      setAvailableGames(data);
-      if (data.length === 1) {
-        // ゲームが1つだけの場合は自動選択
-        setStep('selectGame');
-      } else {
-        // 複数ある場合は選択画面
-        setStep('selectGame');
-      }
+      setAvailableGames(data); // 常に1件のゲームが配列としてセットされる
+      setStep('selectGame'); // ゲームが1つ見つかった場合は選択画面へ
     } else {
       // ゲームがない場合は手動入力へ
       setError('現在進行中のゲームがありません');
