@@ -19,15 +19,30 @@ export default function SlotMachine({ drawnNumber, isSpinning, onAnimationEnd, a
 
   // 音声関数
   const playDrumroll = () => {
-    if (!audioContext || !rouletteBuffer) return;
+    console.log(`[playDrumroll] Called. Context state: ${audioContext?.state}, Buffer exists: ${!!rouletteBuffer}`);
 
-    // 再生前にコンテキストの状態をチェック/再開
-    if (audioContext.state === 'suspended') {
-      audioContext.resume();
+    if (!audioContext || !rouletteBuffer) {
+      console.error("[playDrumroll] Aborted: audioContext or rouletteBuffer is missing.");
+      return;
     }
 
+    // 再生直前に毎回 resume を試みる
+    if (audioContext.state === 'suspended') {
+      console.log("[playDrumroll] Context is suspended, attempting to resume...");
+      audioContext.resume().then(() => {
+        console.log("[playDrumroll] Resume successful.");
+        // resume後に再生を試みる
+        playSoundInternal(audioContext, rouletteBuffer);
+      }).catch(e => console.error("AudioContext resume failed just before play.", e));
+    } else {
+      playSoundInternal(audioContext, rouletteBuffer);
+    }
+  };
+
+  const playSoundInternal = (audioContext: AudioContext, rouletteBuffer: AudioBuffer) => {
     // 既存のsourceがあれば停止して破棄
     if (rouletteSourceRef.current) {
+      console.log("[playSoundInternal] Stopping existing source.");
       try {
         rouletteSourceRef.current.stop();
       } catch (e) {
@@ -37,6 +52,7 @@ export default function SlotMachine({ drawnNumber, isSpinning, onAnimationEnd, a
     }
 
     try {
+      console.log("[playSoundInternal] Creating and starting new source.");
       const source = audioContext.createBufferSource();
       source.buffer = rouletteBuffer;
       source.loop = true;
@@ -46,7 +62,7 @@ export default function SlotMachine({ drawnNumber, isSpinning, onAnimationEnd, a
     } catch (e) {
       console.error('Error playing drumroll:', e);
     }
-  };
+  }
 
   const stopDrumroll = () => {
     if (rouletteSourceRef.current) {
