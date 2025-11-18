@@ -39,7 +39,8 @@
       "Bash(echo $NEXT_PUBLIC_SUPABASE_URL)",
       "Bash(ss:*)",
       "Bash(bash)",
-      "Bash(supabase --version:*)"
+      "Bash(supabase --version:*)",
+      "Bash(pkill -f \"next dev\")"
     ],
     "deny": [],
     "ask": []

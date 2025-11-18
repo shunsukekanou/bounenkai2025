@@ -72,15 +72,7 @@ export default function OrganizerPage() {
   const [reachSquares, setReachSquares] = useState<Array<{row: number, col: number}>>([]);
   const [showReachAnimation, setShowReachAnimation] = useState(false);
 
-  // Listen for broadcast events
-  useEffect(() => {
-    if (!channel) return;
-    channel.on('broadcast', { event: 'start_spin' }, (payload: any) => {
-      // Correctly access the nested payload
-      setNumberToDraw(payload.payload.newNumber);
-      setIsSpinning(true);
-    });
-  }, [channel]);
+
 
   // 音声再生関数
   const playBingoSound = () => {
@@ -257,7 +249,12 @@ export default function OrganizerPage() {
 
     const randomIndex = Math.floor(Math.random() * availableNumbers.length);
     const newNumber = availableNumbers[randomIndex];
-    
+
+    // 管理者自身のアニメーションを即座に開始
+    setNumberToDraw(newNumber);
+    setIsSpinning(true);
+
+    // 参加者にブロードキャスト
     channel.send({
       type: 'broadcast',
       event: 'start_spin',
@@ -281,7 +278,6 @@ export default function OrganizerPage() {
     }
     // Reset animation state
     setIsSpinning(false);
-    setNumberToDraw(null);
   };
 
   return (
