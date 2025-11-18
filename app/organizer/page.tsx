@@ -480,13 +480,11 @@ export default function OrganizerPage() {
                 </div>
 
                 {/* 参加者人数表示 */}
-                <div className="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-lg">
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="text-2xl">👥</span>
-                    <span className="text-lg font-bold text-gray-800">
-                      参加者数: {participantCount}名
-                    </span>
-                  </div>
+                <div className="bg-blue-100 border border-blue-300 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">現在の参加者数:</p>
+                  <p className="text-2xl font-bold text-blue-600 tracking-widest mb-2">
+                    {participantCount}名
+                  </p>
                   {participantCount < 2 && (
                     <p className="text-xs text-red-600 mt-2">
                       ⚠️ 2名以上で抽選を開始できます

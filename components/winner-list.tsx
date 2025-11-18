@@ -69,7 +69,7 @@ export default function WinnerList({ gameId }: WinnerListProps) {
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
-        BINGO RANKING
+        BINGO
       </h2>
       {winners.length === 0 ? (
         <p className="text-center text-gray-500">まだビンゴの人はいません...</p>
