@@ -40,7 +40,9 @@
       "Bash(ss:*)",
       "Bash(bash)",
       "Bash(supabase --version:*)",
-      "Bash(pkill -f \"next dev\")"
+      "Bash(pkill -f \"next dev\")",
+      "Bash(git rm:*)",
+      "Bash(.gitignore)"
     ],
     "deny": [],
     "ask": []
