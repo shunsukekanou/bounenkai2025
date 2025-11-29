@@ -603,9 +603,14 @@ export default function OrganizerPage() {
                 <div className="bg-blue-100 border border-blue-300 p-4 rounded-lg">
                   <p className="text-sm text-gray-600 mb-1">現在の参加者数:</p>
                   <p className="text-2xl font-bold text-blue-600 tracking-widest mb-2">
-                    {participantCount}名
+                    {participantCount + (organizerId ? 1 : 0) + (guestId ? 1 : 0)}名
                   </p>
-                  {participantCount < 2 && (
+                  <div className="text-xs text-gray-600 space-y-0.5">
+                    {organizerId && <p>• 幹事: 1名</p>}
+                    {guestId && <p>• ゲスト: 1名</p>}
+                    {participantCount > 0 && <p>• その他参加者: {participantCount}名</p>}
+                  </div>
+                  {(participantCount + (organizerId ? 1 : 0) + (guestId ? 1 : 0) < 2) && (
                     <p className="text-xs text-red-600 mt-2">
                       ⚠️ 2名以上で抽選を開始できます
                     </p>
@@ -748,10 +753,10 @@ export default function OrganizerPage() {
 
                 <button
                   onClick={handleDrawNumber}
-                  disabled={isSpinning || participantCount < 2}
+                  disabled={isSpinning || (participantCount + (organizerId ? 1 : 0) + (guestId ? 1 : 0) < 2)}
                   className="w-full px-4 py-3 text-base font-semibold text-white bg-green-600 rounded-md active:bg-green-700 disabled:bg-gray-400"
                 >
-                  {isSpinning ? '抽選中...' : participantCount < 2 ? '参加者を待っています...' : '次の数字を抽選する'}
+                  {isSpinning ? '抽選中...' : (participantCount + (organizerId ? 1 : 0) + (guestId ? 1 : 0) < 2) ? '参加者を待っています...' : '次の数字を抽選する'}
                 </button>
 
                 <div className="flex justify-center">
