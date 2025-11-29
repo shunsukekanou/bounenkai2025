@@ -73,6 +73,17 @@ export default function OrganizerPage() {
   const [showReachAnimation, setShowReachAnimation] = useState(false);
   const [marqueeMessage, setMarqueeMessage] = useState('');
 
+  // ゲストの参加状態
+  const [guestStep, setGuestStep] = useState<'notJoined' | 'enterName' | 'selectCard' | 'playing'>('notJoined');
+  const [guestName, setGuestName] = useState('');
+  const [guestId, setGuestId] = useState<string | null>(null);
+  const [guestCardsToSelect, setGuestCardsToSelect] = useState<BingoCardData[]>([]);
+  const [guestSelectedCard, setGuestSelectedCard] = useState<BingoCardData | null>(null);
+  const [guestIsBingo, setGuestIsBingo] = useState(false);
+  const [guestIsReach, setGuestIsReach] = useState(false);
+  const [guestReachSquares, setGuestReachSquares] = useState<Array<{row: number, col: number}>>([]);
+  const [guestShowReachAnimation, setGuestShowReachAnimation] = useState(false);
+
   // Refs for scrolling
   const bingoCardRef = useRef<HTMLDivElement>(null);
   const winnerListRef = useRef<HTMLDivElement>(null);
@@ -234,7 +245,7 @@ export default function OrganizerPage() {
     }
   };
 
-  // ビンゴ/リーチ判定
+  // ビンゴ/リーチ判定（幹事）
   useEffect(() => {
     if (!selectedCard) return;
     const updatedCard = selectedCard.map(row =>
@@ -254,6 +265,31 @@ export default function OrganizerPage() {
       claimReach();
       setTimeout(() => {
         setShowReachAnimation(false);
+      }, 4100);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawnNumbers]);
+
+  // ビンゴ/リーチ判定（ゲスト）
+  useEffect(() => {
+    if (!guestSelectedCard) return;
+    const updatedCard = guestSelectedCard.map(row =>
+      row.map(square => ({ ...square, marked: square.number === 'FREE' || drawnNumbers.includes(square.number as number) }))
+    );
+    setGuestSelectedCard(updatedCard);
+
+    if (!guestIsBingo && checkBingo(updatedCard)) {
+      setGuestIsBingo(true);
+      playBingoSound();
+      claimGuestBingo();
+    } else if (!guestIsBingo && !guestIsReach && checkReach(updatedCard)) {
+      setGuestIsReach(true);
+      setGuestReachSquares(getReachSquares(updatedCard));
+      setGuestShowReachAnimation(true);
+      playReachSound();
+      claimGuestReach();
+      setTimeout(() => {
+        setGuestShowReachAnimation(false);
       }, 4100);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -300,11 +336,15 @@ export default function OrganizerPage() {
         .select('*', { count: 'exact', head: true })
         .eq('game_id', game.id);
 
-      // もし幹事が参加済みなら、カウントから除外する
-      if (organizerId) {
-        query = query.not('id', 'eq', organizerId);
+      // 幹事とゲストをカウントから除外する
+      const excludeIds = [];
+      if (organizerId) excludeIds.push(organizerId);
+      if (guestId) excludeIds.push(guestId);
+
+      if (excludeIds.length > 0) {
+        query = query.not('id', 'in', `(${excludeIds.join(',')})`);
       }
-      
+
       const { count, error } = await query;
 
       if (error) {
@@ -332,7 +372,7 @@ export default function OrganizerPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [game, supabase, organizerId]);
+  }, [game, supabase, organizerId, guestId]);
 
 
 
@@ -408,6 +448,42 @@ export default function OrganizerPage() {
     if (error) return console.error('Could not count winners', error);
     const rank = (data?.length || 0) + 1;
     await supabase.from('participants').update({ bingo_rank: rank }).eq('id', organizerId);
+  };
+
+  // ゲストの参加登録
+  const handleGuestJoin = () => {
+    if (!guestName.trim()) {
+      alert('ゲストの名前を入力してください');
+      return;
+    }
+    setGuestStep('selectCard');
+    setGuestCardsToSelect(generateUniqueBingoCards(3));
+  };
+
+  const handleGuestCardSelect = async (card: BingoCardData) => {
+    if (!game) return;
+    const { data, error } = await supabase.from('participants').insert({ game_id: game.id, user_name: guestName }).select().single();
+    if (error) {
+      console.error('Error registering guest:', error);
+      alert('ゲスト登録に失敗しました: ' + error.message);
+    } else {
+      setGuestId(data.id);
+      setGuestSelectedCard(card);
+      setGuestStep('playing');
+    }
+  };
+
+  const claimGuestReach = async () => {
+    if (!game || !guestId) return;
+    await supabase.from('participants').update({ is_reach: true }).eq('id', guestId);
+  };
+
+  const claimGuestBingo = async () => {
+    if (!game || !guestId) return;
+    const { data, error } = await supabase.from('participants').select('id').eq('game_id', game.id).not('bingo_rank', 'is', null);
+    if (error) return console.error('Could not count winners', error);
+    const rank = (data?.length || 0) + 1;
+    await supabase.from('participants').update({ bingo_rank: rank }).eq('id', guestId);
   };
 
   const handleDrawNumber = () => {
@@ -558,7 +634,7 @@ export default function OrganizerPage() {
 
                 {organizerStep === 'selectCard' && (
                   <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg">
-                    <h3 className="font-bold text-sm text-gray-800 mb-3">🎴 お好きなカードを1枚選んでください</h3>
+                    <h3 className="font-bold text-sm text-gray-800 mb-3">🎴 【幹事】お好きなカードを1枚選んでください</h3>
                     <div className="flex flex-col items-center gap-3">
                       {cardsToSelect.map((card, i) => (
                         <div
@@ -573,31 +649,102 @@ export default function OrganizerPage() {
                   </div>
                 )}
 
-                {organizerStep === 'playing' && selectedCard && (
-                  <div ref={bingoCardRef} className="relative bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg">
-                    <h3 className="font-bold text-sm text-gray-800 mb-2">🎯 {organizerName}さんのカード</h3>
-                    <div className="flex justify-center">
-                      <BingoCardDisplay cardData={selectedCard} reachSquares={reachSquares} showReachAnimation={showReachAnimation} />
-                    </div>
-                    {showReachAnimation && !isBingo && (
-                      <div className="absolute inset-0 flex items-center justify-center z-10 rounded-lg pointer-events-none">
-                        <div className="text-center">
-                          <div className="text-5xl font-black text-white reach-text-flash" style={{
-                            textShadow: '0 0 30px #f97316, 0 0 50px #ea580c, 0 0 70px #dc2626',
-                            WebkitTextStroke: '2px #dc2626'
-                          }}>
-                            REACH!
-                          </div>
+                {/* ゲストの参加UI */}
+                {guestStep === 'notJoined' && (
+                  <div className="bg-green-50 border-l-4 border-green-500 p-3 rounded-lg">
+                    <h3 className="font-bold text-sm text-gray-800 mb-2">👤 ゲスト参加（スマホがない方用・1名のみ）</h3>
+                    <p className="text-xs text-gray-600 mb-2">スマホをお持ちでない方を1名まで幹事画面で参加登録できます</p>
+                    <input
+                      type="text"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      placeholder="ゲストの名前（例：山田花子）"
+                      className="w-full px-3 py-2 mb-2 text-sm border rounded-md"
+                    />
+                    <button
+                      onClick={handleGuestJoin}
+                      className="w-full px-3 py-2 text-sm font-semibold text-white bg-green-600 rounded-md active:bg-green-700"
+                    >
+                      ゲストを参加させる
+                    </button>
+                  </div>
+                )}
+
+                {guestStep === 'selectCard' && (
+                  <div className="bg-green-50 border-l-4 border-green-500 p-3 rounded-lg">
+                    <h3 className="font-bold text-sm text-gray-800 mb-3">🎴 【ゲスト】お好きなカードを1枚選んでください</h3>
+                    <div className="flex flex-col items-center gap-3">
+                      {guestCardsToSelect.map((card, i) => (
+                        <div
+                          key={i}
+                          onClick={() => handleGuestCardSelect(card)}
+                          className="active:scale-95 transition-transform duration-200 cursor-pointer"
+                        >
+                          <BingoCardDisplay cardData={card} />
                         </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 幹事とゲストのカード表示（横並び） */}
+                {(organizerStep === 'playing' && selectedCard) || (guestStep === 'playing' && guestSelectedCard) ? (
+                  <div ref={bingoCardRef} className="space-y-3">
+                    {/* 幹事のカード */}
+                    {organizerStep === 'playing' && selectedCard && (
+                      <div className="relative bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg">
+                        <h3 className="font-bold text-sm text-gray-800 mb-2">🎯 【幹事】{organizerName}さんのカード</h3>
+                        <div className="flex justify-center">
+                          <BingoCardDisplay cardData={selectedCard} reachSquares={reachSquares} showReachAnimation={showReachAnimation} />
+                        </div>
+                        {showReachAnimation && !isBingo && (
+                          <div className="absolute inset-0 flex items-center justify-center z-10 rounded-lg pointer-events-none">
+                            <div className="text-center">
+                              <div className="text-5xl font-black text-white reach-text-flash" style={{
+                                textShadow: '0 0 30px #f97316, 0 0 50px #ea580c, 0 0 70px #dc2626',
+                                WebkitTextStroke: '2px #dc2626'
+                              }}>
+                                REACH!
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {isBingo && (
+                          <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-20 rounded-lg">
+                            <div className="text-5xl font-black text-white animate-bounce" style={{ textShadow: '0 0 20px #fef08a, 0 0 30px #fde047' }}>BINGO!</div>
+                          </div>
+                        )}
                       </div>
                     )}
-                    {isBingo && (
-                      <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-20 rounded-lg">
-                        <div className="text-5xl font-black text-white animate-bounce" style={{ textShadow: '0 0 20px #fef08a, 0 0 30px #fde047' }}>BINGO!</div>
+
+                    {/* ゲストのカード */}
+                    {guestStep === 'playing' && guestSelectedCard && (
+                      <div className="relative bg-green-50 border-l-4 border-green-500 p-3 rounded-lg">
+                        <h3 className="font-bold text-sm text-gray-800 mb-2">👤 【ゲスト】{guestName}さんのカード</h3>
+                        <div className="flex justify-center">
+                          <BingoCardDisplay cardData={guestSelectedCard} reachSquares={guestReachSquares} showReachAnimation={guestShowReachAnimation} />
+                        </div>
+                        {guestShowReachAnimation && !guestIsBingo && (
+                          <div className="absolute inset-0 flex items-center justify-center z-10 rounded-lg pointer-events-none">
+                            <div className="text-center">
+                              <div className="text-5xl font-black text-white reach-text-flash" style={{
+                                textShadow: '0 0 30px #f97316, 0 0 50px #ea580c, 0 0 70px #dc2626',
+                                WebkitTextStroke: '2px #dc2626'
+                              }}>
+                                REACH!
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {guestIsBingo && (
+                          <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-20 rounded-lg">
+                            <div className="text-5xl font-black text-white animate-bounce" style={{ textShadow: '0 0 20px #fef08a, 0 0 30px #fde047' }}>BINGO!</div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
+                ) : null}
 
                 <button
                   onClick={handleDrawNumber}
