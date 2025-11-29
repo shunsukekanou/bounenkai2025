@@ -42,7 +42,12 @@
       "Bash(supabase --version:*)",
       "Bash(pkill -f \"next dev\")",
       "Bash(git rm:*)",
-      "Bash(.gitignore)"
+      "Bash(.gitignore)",
+      "Bash(gh repo view:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:bounenkai2025.vercel.app)",
+      "Bash(npm i:*)"
     ],
     "deny": [],
     "ask": []
