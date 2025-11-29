@@ -217,7 +217,7 @@ export default function ParticipantPage() {
   // カード選択時のクリック音
   const playClickSound = () => {
     if (typeof window === 'undefined' || !audioContextRef.current) return;
-    const audioContext = audioContext.current;
+    const audioContext = audioContextRef.current;
     try {
       // const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
