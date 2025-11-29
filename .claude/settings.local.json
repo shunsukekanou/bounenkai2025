@@ -47,7 +47,9 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:bounenkai2025.vercel.app)",
-      "Bash(npm i:*)"
+      "Bash(npm i:*)",
+      "Bash(nslookup kwgcaefclgttujeyylon.supabase.co)",
+      "Bash(getent:*)"
     ],
     "deny": [],
     "ask": []
