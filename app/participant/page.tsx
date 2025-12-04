@@ -117,6 +117,42 @@ export default function ParticipantPage() {
     }
   }, []);
 
+  // ブラウザの戻る操作を防ぐ（ゲーム中のみ）
+  useEffect(() => {
+    if (step !== 'playing') return;
+
+    // 履歴に現在のページを追加（戻るを無効化するため）
+    const preventNavigation = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+
+    // ページロード時に履歴を追加
+    preventNavigation();
+
+    // popstateイベントで戻るを検知して無効化
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+      preventNavigation();
+      // 戻る操作があったら確認メッセージを表示
+      setShowExitConfirm(true);
+    };
+
+    // beforeunloadイベントでページ離脱を検知
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [step]);
+
   // アクティブなゲームを自動検出
   const fetchAvailableGames = async () => {
     const { data, error } = await supabase
@@ -149,6 +185,7 @@ export default function ParticipantPage() {
   const [reachSquares, setReachSquares] = useState<Array<{row: number, col: number}>>([]);
   const [showReachAnimation, setShowReachAnimation] = useState(false);
   const [marqueeMessage, setMarqueeMessage] = useState('');
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // Refs for scrolling
   const bingoCardRef = useRef<HTMLDivElement>(null);
@@ -363,11 +400,54 @@ export default function ParticipantPage() {
     if (!userName.trim()) return setError('名前を入力してください。');
     if (!gameId) return setError('ゲームIDが見つかりません。');
     setError('');
-    const { data, error: insertError } = await supabase.from('participants').insert({ game_id: gameId, user_name: userName }).select().single();
-    if (insertError || !data) return setError('参加者登録に失敗しました。');
-    setParticipantId(data.id);
-    setCardsToSelect(generateUniqueBingoCards(3));
-    setStep('selectCard');
+
+    // 同じゲームで同じ名前の参加者が既に存在するかチェック
+    const { data: existingParticipant, error: checkError } = await supabase
+      .from('participants')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('user_name', userName)
+      .maybeSingle();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      // PGRST116 = "No rows found" エラー以外はエラーとして扱う
+      return setError('参加者確認に失敗しました。');
+    }
+
+    let participantData;
+
+    if (existingParticipant) {
+      // 既存の参加者が見つかった場合は再利用
+      participantData = existingParticipant;
+      console.log('既存の参加者として再参加:', userName);
+    } else {
+      // 新規参加者として登録
+      const { data: newParticipant, error: insertError } = await supabase
+        .from('participants')
+        .insert({ game_id: gameId, user_name: userName })
+        .select()
+        .single();
+
+      if (insertError || !newParticipant) {
+        return setError('参加者登録に失敗しました。');
+      }
+      participantData = newParticipant;
+      console.log('新規参加者として登録:', userName);
+    }
+
+    setParticipantId(participantData.id);
+
+    // 既存参加者の場合、カードが既に選択されているかチェック
+    if (participantData.bingo_card) {
+      // 既にカードが選択されている場合は、そのカードでゲームを再開
+      setSelectedCard(participantData.bingo_card);
+      setDrawnNumbers([]); // 抽選済み番号は後で更新される
+      setStep('playing');
+    } else {
+      // カード未選択の場合は、カード選択画面へ
+      setCardsToSelect(generateUniqueBingoCards(3));
+      setStep('selectCard');
+    }
   };
 
   const claimReach = async () => {
@@ -511,7 +591,47 @@ export default function ParticipantPage() {
       case 'playing':
         if (!selectedCard) return <div>カードがありません。</div>;
         return (
-          <div className="space-y-4 w-full">
+          <div className="space-y-4 w-full relative">
+            {/* 終了ボタン（右上固定） */}
+            <button
+              onClick={() => setShowExitConfirm(true)}
+              className="fixed top-4 right-4 z-50 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full shadow-lg hover:bg-red-700 transition-all hover:scale-110"
+              aria-label="ゲーム終了"
+            >
+              <span className="text-xl font-bold leading-none">✕</span>
+            </button>
+
+            {/* 終了確認ダイアログ */}
+            {showExitConfirm && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-2xl">
+                  <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">
+                    ゲームを終了しますか？
+                  </h2>
+                  <p className="text-sm text-gray-600 mb-6 text-center">
+                    終了すると、同じ名前で再参加できます
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowExitConfirm(false)}
+                      className="flex-1 px-4 py-3 text-sm font-semibold text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition"
+                    >
+                      キャンセル
+                    </button>
+                    <button
+                      onClick={() => {
+                        // ページをリロードして初期画面に戻る
+                        window.location.href = '/participant';
+                      }}
+                      className="flex-1 px-4 py-3 text-sm font-semibold text-white bg-red-600 rounded-md hover:bg-red-700 transition"
+                    >
+                      終了する
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="w-full bg-green-50 border-l-4 border-green-500 p-3 rounded-lg">
               <p className="text-xs text-gray-700 text-left">
                 ✅ 準備完了！幹事が番号を抽選すると、該当する数字が自動でマークされます。縦・横・斜めのいずれか1列が揃ったら自動的にビンゴです！

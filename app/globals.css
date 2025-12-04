@@ -149,8 +149,8 @@
   }
 
   @keyframes marquee {
-    from { transform: translateX(-100%); }
-    to { transform: translateX(100vw); }
+    from { transform: translateX(100vw); }
+    to { transform: translateX(-100%); }
   }
 
   .animate-marquee {

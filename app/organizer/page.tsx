@@ -7,6 +7,7 @@ import WinnerList from '../../components/winner-list';
 import ReachList from '../../components/reach-list';
 import SlotMachine from '../../components/slot-machine';
 import MobileOnlyGuard from '../../components/mobile-only-guard';
+import ParticipantList from '../../components/participant-list';
 // import { QRCodeSVG } from 'qrcode.react'; // 一時的にコメントアウト（Vercelビルドエラー回避）
 
 // バージョン表示用（デプロイ確認用）
@@ -72,6 +73,7 @@ export default function OrganizerPage() {
   const [reachSquares, setReachSquares] = useState<Array<{row: number, col: number}>>([]);
   const [showReachAnimation, setShowReachAnimation] = useState(false);
   const [marqueeMessage, setMarqueeMessage] = useState('');
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // ゲストの参加状態
   const [guestStep, setGuestStep] = useState<'notJoined' | 'enterName' | 'selectCard' | 'playing'>('notJoined');
@@ -326,26 +328,15 @@ export default function OrganizerPage() {
     }
   }, [isReach]);
 
-  // リアルタイムで参加者数を取得
+  // リアルタイムで参加者数を取得（簡素化版）
   useEffect(() => {
     if (!game) return;
 
     const fetchParticipantCount = async () => {
-      let query = supabase
+      const { count, error } = await supabase
         .from('participants')
         .select('*', { count: 'exact', head: true })
         .eq('game_id', game.id);
-
-      // 幹事とゲストをカウントから除外する
-      const excludeIds = [];
-      if (organizerId) excludeIds.push(organizerId);
-      if (guestId) excludeIds.push(guestId);
-
-      if (excludeIds.length > 0) {
-        query = query.not('id', 'in', `(${excludeIds.join(',')})`);
-      }
-
-      const { count, error } = await query;
 
       if (error) {
         console.error('Error fetching participant count:', error);
@@ -372,9 +363,43 @@ export default function OrganizerPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [game, supabase, organizerId, guestId]);
+  }, [game, supabase]);
 
+  // ブラウザの戻る操作を防ぐ（ゲーム作成後のみ）
+  useEffect(() => {
+    if (!game) return;
 
+    // 履歴に現在のページを追加（戻るを無効化するため）
+    const preventNavigation = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+
+    // ページロード時に履歴を追加
+    preventNavigation();
+
+    // popstateイベントで戻るを検知して無効化
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+      preventNavigation();
+      // 戻る操作があったら確認メッセージを表示
+      setShowExitConfirm(true);
+    };
+
+    // beforeunloadイベントでページ離脱を検知
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [game]);
 
   const generateGameCode = () => {
     const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
@@ -426,15 +451,59 @@ export default function OrganizerPage() {
 
   const handleCardSelect = async (card: BingoCardData) => {
     if (!game) return;
-    const { data, error } = await supabase.from('participants').insert({ game_id: game.id, user_name: organizerName }).select().single();
-    if (error) {
-      console.error('Error registering organizer:', error);
-      alert('参加登録に失敗しました: ' + error.message);
-    } else {
-      setOrganizerId(data.id);
-      setSelectedCard(card);
-      setOrganizerStep('playing');
+
+    // 同じゲームで同じ名前の参加者が既に存在するかチェック
+    const { data: existingParticipant, error: checkError } = await supabase
+      .from('participants')
+      .select('*')
+      .eq('game_id', game.id)
+      .eq('user_name', organizerName)
+      .maybeSingle();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking organizer:', checkError);
+      alert('参加者確認に失敗しました');
+      return;
     }
+
+    let participantData;
+
+    if (existingParticipant) {
+      // 既存の参加者が見つかった場合は再利用
+      participantData = existingParticipant;
+      console.log('既存の幹事として再参加:', organizerName);
+
+      // 既にカードが選択されている場合はそれを使用
+      if (existingParticipant.bingo_card) {
+        setSelectedCard(existingParticipant.bingo_card);
+      } else {
+        // カードが未選択の場合は新しいカードを保存
+        await supabase
+          .from('participants')
+          .update({ bingo_card: card })
+          .eq('id', existingParticipant.id);
+        setSelectedCard(card);
+      }
+    } else {
+      // 新規参加者として登録
+      const { data: newParticipant, error: insertError } = await supabase
+        .from('participants')
+        .insert({ game_id: game.id, user_name: organizerName, bingo_card: card })
+        .select()
+        .single();
+
+      if (insertError || !newParticipant) {
+        console.error('Error registering organizer:', insertError);
+        alert('参加登録に失敗しました: ' + insertError?.message);
+        return;
+      }
+      participantData = newParticipant;
+      setSelectedCard(card);
+      console.log('新規幹事として登録:', organizerName);
+    }
+
+    setOrganizerId(participantData.id);
+    setOrganizerStep('playing');
   };
 
   const claimReach = async () => {
@@ -462,15 +531,59 @@ export default function OrganizerPage() {
 
   const handleGuestCardSelect = async (card: BingoCardData) => {
     if (!game) return;
-    const { data, error } = await supabase.from('participants').insert({ game_id: game.id, user_name: guestName }).select().single();
-    if (error) {
-      console.error('Error registering guest:', error);
-      alert('ゲスト登録に失敗しました: ' + error.message);
-    } else {
-      setGuestId(data.id);
-      setGuestSelectedCard(card);
-      setGuestStep('playing');
+
+    // 同じゲームで同じ名前の参加者が既に存在するかチェック
+    const { data: existingParticipant, error: checkError } = await supabase
+      .from('participants')
+      .select('*')
+      .eq('game_id', game.id)
+      .eq('user_name', guestName)
+      .maybeSingle();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking guest:', checkError);
+      alert('ゲスト確認に失敗しました');
+      return;
     }
+
+    let participantData;
+
+    if (existingParticipant) {
+      // 既存の参加者が見つかった場合は再利用
+      participantData = existingParticipant;
+      console.log('既存のゲストとして再参加:', guestName);
+
+      // 既にカードが選択されている場合はそれを使用
+      if (existingParticipant.bingo_card) {
+        setGuestSelectedCard(existingParticipant.bingo_card);
+      } else {
+        // カードが未選択の場合は新しいカードを保存
+        await supabase
+          .from('participants')
+          .update({ bingo_card: card })
+          .eq('id', existingParticipant.id);
+        setGuestSelectedCard(card);
+      }
+    } else {
+      // 新規参加者として登録
+      const { data: newParticipant, error: insertError } = await supabase
+        .from('participants')
+        .insert({ game_id: game.id, user_name: guestName, bingo_card: card })
+        .select()
+        .single();
+
+      if (insertError || !newParticipant) {
+        console.error('Error registering guest:', insertError);
+        alert('ゲスト登録に失敗しました: ' + insertError?.message);
+        return;
+      }
+      participantData = newParticipant;
+      setGuestSelectedCard(card);
+      console.log('新規ゲストとして登録:', guestName);
+    }
+
+    setGuestId(participantData.id);
+    setGuestStep('playing');
   };
 
   const claimGuestReach = async () => {
@@ -532,7 +645,49 @@ export default function OrganizerPage() {
 
   return (
     <MobileOnlyGuard>
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4 relative">
+        {/* 終了ボタン（ゲーム作成後のみ表示） */}
+        {game && (
+          <button
+            onClick={() => setShowExitConfirm(true)}
+            className="fixed top-4 right-4 z-50 w-8 h-8 flex items-center justify-center bg-red-600 text-white rounded-full shadow-lg hover:bg-red-700 transition-all hover:scale-110"
+            aria-label="ゲーム終了"
+          >
+            <span className="text-xl font-bold leading-none">✕</span>
+          </button>
+        )}
+
+        {/* 終了確認ダイアログ */}
+        {showExitConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-2xl">
+              <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">
+                ゲームを終了しますか？
+              </h2>
+              <p className="text-sm text-gray-600 mb-6 text-center">
+                終了すると管理画面を離れます
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowExitConfirm(false)}
+                  className="flex-1 px-4 py-3 text-sm font-semibold text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={() => {
+                    // ページをリロードして初期画面に戻る
+                    window.location.href = '/organizer';
+                  }}
+                  className="flex-1 px-4 py-3 text-sm font-semibold text-white bg-red-600 rounded-md hover:bg-red-700 transition"
+                >
+                  終了する
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="w-full p-6 space-y-5 bg-white rounded-lg shadow-md">
           <h1 className="text-2xl font-bold text-center text-gray-800">👔 ビンゴゲーム管理画面</h1>
 
@@ -599,23 +754,8 @@ export default function OrganizerPage() {
                   </div>
                 </div>
 
-                {/* 参加者人数表示 */}
-                <div className="bg-blue-100 border border-blue-300 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">現在の参加者数:</p>
-                  <p className="text-2xl font-bold text-blue-600 tracking-widest mb-2">
-                    {participantCount + (organizerId ? 1 : 0) + (guestId ? 1 : 0)}名
-                  </p>
-                  <div className="text-xs text-gray-600 space-y-0.5">
-                    {organizerId && <p>• 幹事: 1名</p>}
-                    {guestId && <p>• ゲスト: 1名</p>}
-                    {participantCount > 0 && <p>• その他参加者: {participantCount}名</p>}
-                  </div>
-                  {(participantCount + (organizerId ? 1 : 0) + (guestId ? 1 : 0) < 2) && (
-                    <p className="text-xs text-red-600 mt-2">
-                      ⚠️ 2名以上で抽選を開始できます
-                    </p>
-                  )}
-                </div>
+                {/* 参加者一覧表示（リアルタイム更新） */}
+                <ParticipantList gameId={game.id} />
 
                 {/* 幹事の参加UI */}
                 {organizerStep === 'notJoined' && (
@@ -753,10 +893,21 @@ export default function OrganizerPage() {
 
                 <button
                   onClick={handleDrawNumber}
-                  disabled={isSpinning || (participantCount + (organizerId ? 1 : 0) + (guestId ? 1 : 0) < 2)}
+                  disabled={isSpinning || participantCount < 2}
                   className="w-full px-4 py-3 text-base font-semibold text-white bg-green-600 rounded-md active:bg-green-700 disabled:bg-gray-400"
                 >
-                  {isSpinning ? '抽選中...' : (participantCount + (organizerId ? 1 : 0) + (guestId ? 1 : 0) < 2) ? '参加者を待っています...' : '次の数字を抽選する'}
+                  {isSpinning ? '抽選中...' : participantCount < 2 ? '参加者を待っています...' : '次の数字を抽選する'}
+                </button>
+
+                {/* アニメーション確認用テストボタン */}
+                <button
+                  onClick={() => {
+                    setMarqueeMessage('🎉 テスト：右から左へ流れます 🎉');
+                    setTimeout(() => setMarqueeMessage(''), 6000);
+                  }}
+                  className="w-full px-4 py-2 text-sm font-semibold text-white bg-purple-600 rounded-md active:bg-purple-700"
+                >
+                  🎬 マーキーアニメーション確認
                 </button>
 
                 <div className="flex justify-center">
