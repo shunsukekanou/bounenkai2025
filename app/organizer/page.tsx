@@ -899,17 +899,6 @@ export default function OrganizerPage() {
                   {isSpinning ? '抽選中...' : participantCount < 2 ? '参加者を待っています...' : '次の数字を抽選する'}
                 </button>
 
-                {/* アニメーション確認用テストボタン */}
-                <button
-                  onClick={() => {
-                    setMarqueeMessage('🎉 テスト：右から左へ流れます 🎉');
-                    setTimeout(() => setMarqueeMessage(''), 6000);
-                  }}
-                  className="w-full px-4 py-2 text-sm font-semibold text-white bg-purple-600 rounded-md active:bg-purple-700"
-                >
-                  🎬 マーキーアニメーション確認
-                </button>
-
                 <div className="flex justify-center">
                   <SlotMachine
                     drawnNumber={numberToDraw}
