@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS participants (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   game_id UUID REFERENCES games(id) ON DELETE CASCADE NOT NULL,
   user_name TEXT NOT NULL,
+  bingo_card JSONB,
+  is_reach BOOLEAN DEFAULT false,
   bingo_rank INTEGER
 );
 
