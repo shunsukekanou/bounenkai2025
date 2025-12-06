@@ -49,7 +49,9 @@
       "WebFetch(domain:bounenkai2025.vercel.app)",
       "Bash(npm i:*)",
       "Bash(nslookup kwgcaefclgttujeyylon.supabase.co)",
-      "Bash(getent:*)"
+      "Bash(getent:*)",
+      "Bash(npm outdated:*)",
+      "Bash(npm audit fix:*)"
     ],
     "deny": [],
     "ask": []
