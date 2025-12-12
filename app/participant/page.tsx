@@ -441,7 +441,7 @@ export default function ParticipantPage() {
     if (participantData.bingo_card) {
       // 既にカードが選択されている場合は、そのカードでゲームを再開
       setSelectedCard(participantData.bingo_card);
-      setDrawnNumbers([]); // 抽選済み番号は後で更新される
+      // drawnNumbersは既にhandleJoinGame/handleSelectGameで設定済みなのでリセット不要
       setStep('playing');
     } else {
       // カード未選択の場合は、カード選択画面へ
