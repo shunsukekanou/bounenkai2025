@@ -348,19 +348,28 @@ export default function OrganizerPage() {
     // 初回取得
     fetchParticipantCount();
 
-    // リアルタイム更新
+    // リアルタイム更新（改善版：エラーハンドリングとログ追加）
     const channel = supabase
       .channel(`participants-count-${game.id}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'participants', filter: `game_id=eq.${game.id}` },
-        () => {
+        (payload) => {
+          console.log('Participant count change detected:', payload);
           fetchParticipantCount();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Participant count channel subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to participant count updates');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Failed to subscribe to participant count updates');
+        }
+      });
 
     return () => {
+      console.log('Unsubscribing from participant count channel');
       supabase.removeChannel(channel);
     };
   }, [game, supabase]);

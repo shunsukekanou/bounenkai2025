@@ -40,19 +40,28 @@ export default function ParticipantList({ gameId }: ParticipantListProps) {
     // 初回取得
     fetchParticipants();
 
-    // リアルタイム更新
+    // リアルタイム更新（改善版：エラーハンドリングとログ追加）
     const channel = supabase
       .channel(`participants-list-${gameId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'participants', filter: `game_id=eq.${gameId}` },
-        () => {
+        (payload) => {
+          console.log('Participant list change detected:', payload);
           fetchParticipants();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Participant list channel subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to participant list updates');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Failed to subscribe to participant list updates');
+        }
+      });
 
     return () => {
+      console.log('Unsubscribing from participant list channel');
       supabase.removeChannel(channel);
     };
   }, [gameId, supabase]);
