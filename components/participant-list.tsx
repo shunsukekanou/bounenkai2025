@@ -9,6 +9,7 @@ interface Participant {
   created_at: string;
   is_reach: boolean;
   bingo_rank: number | null;
+  bingo_card: any;
 }
 
 interface ParticipantListProps {
@@ -26,8 +27,9 @@ export default function ParticipantList({ gameId }: ParticipantListProps) {
     const fetchParticipants = async () => {
       const { data, error } = await supabase
         .from('participants')
-        .select('id, user_name, created_at, is_reach, bingo_rank')
+        .select('id, user_name, created_at, is_reach, bingo_rank, bingo_card')
         .eq('game_id', gameId)
+        .not('bingo_card', 'is', null) // カード選択済みの参加者のみ
         .order('created_at', { ascending: true });
 
       if (error) {

@@ -450,6 +450,32 @@ export default function ParticipantPage() {
     }
   };
 
+  const handleCardSelection = async (card: BingoCardData) => {
+    unlockAudio();
+    playClickSound();
+
+    if (!participantId) {
+      setError('参加者IDが見つかりません。');
+      return;
+    }
+
+    // カードをデータベースに保存
+    const { error: updateError } = await supabase
+      .from('participants')
+      .update({ bingo_card: card })
+      .eq('id', participantId);
+
+    if (updateError) {
+      console.error('カード保存エラー:', updateError);
+      setError('カードの保存に失敗しました。もう一度お試しください。');
+      return;
+    }
+
+    // 保存成功後、ローカル状態を更新してゲーム画面へ
+    setSelectedCard(card);
+    setStep('playing');
+  };
+
   const claimReach = async () => {
     if (!gameId || !participantId) return;
     await supabase.from('participants').update({ is_reach: true }).eq('id', participantId);
@@ -581,11 +607,12 @@ export default function ParticipantPage() {
             </div>
             <div className="flex flex-col items-center gap-4 pt-2">
               {cardsToSelect.map((card, i) => (
-                <div key={i} onClick={() => { unlockAudio(); playClickSound(); setSelectedCard(card); setStep('playing'); }} className="active:scale-95 transition-transform duration-200">
+                <div key={i} onClick={() => handleCardSelection(card)} className="active:scale-95 transition-transform duration-200 cursor-pointer">
                   <BingoCardDisplay cardData={card} />
                 </div>
               ))}
             </div>
+            {error && <p className="text-red-500 text-sm mt-2 text-center">{error}</p>}
           </div>
         );
       case 'playing':
